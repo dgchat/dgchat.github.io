@@ -1,0 +1,2094 @@
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DageAlbum | 加密云相册</title>
+  <script src="js/tailwindcss.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class"
+    };
+  </script>
+  <script src="js/nostr.bundle.js"></script>
+
+  <script src="js/qrcode.min.js"></script>
+  <style>
+    .no-scrollbar::-webkit-scrollbar {
+      display: none
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none
+    }
+
+    .masonry-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 4px
+    }
+
+    @media (min-width: 768px) {
+      .masonry-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 8px
+      }
+    }
+
+    .img-card {
+      aspect-ratio: 1/1;
+      position: relative;
+      overflow: hidden;
+      border-radius: 8px;
+      background: #e5e7eb;
+      cursor: pointer;
+      transition: transform 0.2s
+    }
+
+    .dark .img-card {
+      background: #1f2937
+    }
+
+    .img-card:hover {
+      transform: scale(0.98)
+    }
+
+    .img-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: opacity 0.3s;
+      opacity: 0
+    }
+
+    .img-card img.loaded {
+      opacity: 1
+    }
+
+    .loader {
+      border: 3px solid #f3f3f3;
+      border-radius: 50%;
+      border-top: 3px solid #3b82f6;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite
+    }
+
+    .dark .loader {
+      border-color: #374151;
+      border-top-color: #3b82f6
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg)
+      }
+
+      100% {
+        transform: rotate(360deg)
+      }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.3s ease-out forwards
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0
+      }
+
+      to {
+        opacity: 1
+      }
+    }
+
+    /* 相册时间轴分组样式 (跨越网格并支持原生吸顶效果) */
+    .section-header {
+      grid-column: 1/-1;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(249, 250, 251, 0.85);
+      /* 适配亮色背景 */
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 8px 4px;
+      margin-top: 12px;
+      font-size: 0.875rem;
+      font-weight: 800;
+      color: #374151;
+      display: flex;
+      align-items: center;
+      justify-content: space-between
+    }
+
+    .dark .section-header {
+      background: rgba(3, 7, 18, 0.85);
+      /* 适配暗色背景 */
+      color: #d1d5db
+    }
+  </style>
+</head>
+
+<body class="bg-gray-100 dark:bg-gray-950 text-gray-800 dark:text-gray-200 font-sans h-screen w-screen overflow-hidden flex selection:bg-blue-500 selection:text-white">
+
+
+  <div id="login-screen" class="absolute inset-0 z-50 bg-white dark:bg-gray-950 flex flex-col items-center justify-center p-6">
+    <div class="max-w-sm w-full bg-gray-50 dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 p-8 flex flex-col items-center transition-all">
+
+
+      <div id="account-list-area" class="w-full flex flex-col items-center">
+        <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg flex items-center justify-center mb-4">
+          <span class="text-white text-3xl font-black">DA</span>
+        </div>
+        <h1 class="text-xl font-black mb-1">DageAlbum</h1>
+        <p class="text-xs text-gray-500 font-bold tracking-widest mb-1">本地加密相册终端</p>
+        <p class="text-[10px] text-blue-500 font-bold tracking-widest mb-6" id="login-version-display"></p>
+
+        <div id="saved-accounts-list" class="w-full space-y-3 mb-6 max-h-60 overflow-y-auto no-scrollbar">
+
+        </div>
+
+        <div class="w-full border-t border-gray-200 dark:border-gray-800 pt-6">
+          <button onclick="showAddAccountArea()" class="w-full bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 py-3 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/50 transition shadow-sm font-bold active:scale-95 flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            导入 / 创建新账号
+          </button>
+        </div>
+      </div>
+
+
+      <div id="add-account-area" class="w-full hidden flex flex-col">
+        <button onclick="hideAddAccountArea()" class="text-gray-500 hover:text-gray-800 dark:hover:text-white mb-4 flex items-center text-sm font-bold transition active:scale-95">
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg> 返回
+        </button>
+        <h2 class="text-xl font-bold mb-5">添加账号</h2>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-[11px] font-bold text-gray-500 mb-1 ml-1">Relay 节点地址</label>
+            <input type="text" id="new-relay-url" value="127.0.0.1:3009" class="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 outline-none font-mono text-xs">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-gray-500 mb-1 ml-1">私钥 (nsec / hex)</label>
+            <input type="password" id="sk-input" placeholder="输入私钥导入..." class="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 outline-none font-mono text-xs">
+          </div>
+          <button onclick="importAccount()" class="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition shadow-sm font-bold active:scale-95 text-sm">加密导入本机</button>
+          <div class="relative flex py-2 items-center">
+            <div class="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
+            <span class="flex-shrink-0 mx-4 text-gray-400 text-xs">或者</span>
+            <div class="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
+          </div>
+          <button onclick="openCreateAccountModal()" class="w-full bg-green-500 text-white py-2.5 rounded-lg hover:bg-green-600 transition shadow-sm font-bold active:scale-95 text-sm">生成全新账号</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="pwd-setup-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-[150] flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-200 dark:border-gray-800">
+      <h3 class="text-lg font-bold mb-2" id="pwd-setup-title">设置安全密码</h3>
+      <p class="text-[11px] text-gray-500 dark:text-gray-400 mb-5 leading-relaxed">此密码用于本地军工级加密保护您的私钥。以后登录均需使用，仅存本地，遗忘无法找回！</p>
+      <div class="space-y-4">
+        <input type="text" id="new-nick" placeholder="设置展示昵称 (必填)" class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 text-sm focus:ring-2 outline-none font-bold text-blue-600">
+        <input type="password" id="new-pwd" placeholder="输入新密码 (至少8位)" class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 text-sm focus:ring-2 outline-none">
+        <input type="password" id="confirm-pwd" placeholder="再次确认密码" class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 text-sm focus:ring-2 outline-none">
+      </div>
+      <div class="mt-6 flex justify-end space-x-3">
+        <button onclick="closePwdSetupModal()" class="px-5 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition">取消</button>
+        <button onclick="submitPwdSetup()" class="px-5 py-2.5 text-sm font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm active:scale-95">确认存入</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="pwd-verify-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-[150] flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-200 dark:border-gray-800">
+      <div class="flex items-center space-x-3 mb-2">
+        <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold" id="verify-avatar">🔒</div>
+        <div>
+          <h3 class="text-base font-bold" id="verify-title">身份验证</h3>
+          <p class="text-xs text-gray-500">请输入该账号的本地密码</p>
+        </div>
+      </div>
+      <input type="password" id="verify-pwd" placeholder="输入密码..." class="w-full mt-4 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 text-sm focus:ring-2 outline-none" onkeypress="if(event.key==='Enter') submitPwdVerify()">
+      <div class="mt-6 flex justify-end space-x-3">
+        <button onclick="closePwdVerifyModal()" class="px-5 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition">取消</button>
+        <button onclick="submitPwdVerify()" class="px-5 py-2.5 text-sm font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm active:scale-95">验证并解密</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="change-pwd-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-[150] flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-200 dark:border-gray-800">
+      <div class="flex items-center space-x-3 mb-2">
+        <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold">🔑</div>
+        <div>
+          <h3 class="text-base font-bold">修改本地安全密码</h3>
+          <p class="text-[10px] text-gray-500">此密码用于加密您的私钥，遗忘无法找回！</p>
+        </div>
+      </div>
+      <div class="space-y-4 mt-5">
+        <input type="password" id="change-old-pwd" placeholder="当前使用的旧密码" class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 text-sm focus:ring-2 outline-none font-bold text-orange-600">
+        <input type="password" id="change-new-pwd" placeholder="设置新密码 (至少8位)" class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 text-sm focus:ring-2 outline-none">
+        <input type="password" id="change-confirm-pwd" placeholder="再次确认新密码" class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 text-sm focus:ring-2 outline-none">
+      </div>
+      <div class="mt-6 flex justify-end space-x-3">
+        <button onclick="document.getElementById('change-pwd-modal').classList.add('hidden')" class="px-5 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition">取消</button>
+        <button onclick="submitChangeLocalPwd()" class="px-5 py-2.5 text-sm font-bold bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition shadow-sm active:scale-95">验证并修改</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="app-screen" class="hidden flex-col w-full h-full relative">
+
+    <header class="h-[60px] md:h-[70px] bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 md:px-6 shrink-0 z-20">
+      <div class="flex items-center space-x-3">
+
+        <div id="my-avatar" class="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center text-white font-bold shadow-sm cursor-pointer hover:opacity-80 transition active:scale-95 overflow-hidden shrink-0" title="个人资料" onclick="openProfileModal()">
+          DA
+        </div>
+        <div class="flex flex-col space-y-1">
+
+          <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 shadow-inner">
+            <button id="filter-btn-all" onclick="setGalleryFilter('all')" class="text-[10px] md:text-xs font-bold px-3 py-1 rounded-md transition-all duration-200 bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm">全部</button>
+            <button id="filter-btn-mine" onclick="setGalleryFilter('mine')" class="text-[10px] md:text-xs font-bold px-3 py-1 rounded-md transition-all duration-200 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">我传的</button>
+            <button id="filter-btn-shared" onclick="setGalleryFilter('shared')" class="text-[10px] md:text-xs font-bold px-3 py-1 rounded-md transition-all duration-200 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">收到的</button>
+          </div>
+          <div class="text-[9px] md:text-[10px] text-blue-500 font-bold ml-1" id="conn-status">正在连接...</div>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2 md:space-x-3">
+
+        <button onclick="openContactsModal()" class="p-2 text-gray-500 hover:text-indigo-500 transition active:scale-95 bg-gray-50 dark:bg-gray-800 rounded-full" title="通讯录与好友">👥</button>
+        <button onclick="manualLock()" class="p-2 text-gray-500 hover:text-orange-500 transition active:scale-95 bg-gray-50 dark:bg-gray-800 rounded-full" title="一键锁定相册">🔒</button>
+
+
+        <div class="relative">
+          <button id="btn-settings-gear" onclick="toggleSettingsDropdown(event)" class="p-2 text-gray-500 hover:text-gray-800 dark:hover:text-white transition active:scale-95 bg-gray-50 dark:bg-gray-800 rounded-full" title="系统设置">⚙️</button>
+
+          <div id="settings-dropdown" class="absolute top-12 right-0 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl opacity-0 transform scale-95 pointer-events-none transition-all origin-top-right z-50 flex flex-col p-2">
+            <div class="text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-1 px-2 mt-1">Settings</div>
+
+            <button onclick="actionDropdown('theme')" class="flex items-center w-full px-3 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition text-left text-gray-700 dark:text-gray-300 font-bold">
+              <span class="mr-2 text-base">🌗</span>外观深浅色
+            </button>
+
+            <button onclick="openRelaySetupModal()" class="flex items-center justify-between w-full px-3 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition text-left group">
+              <div class="flex items-center text-gray-700 dark:text-gray-300 font-bold"><span class="mr-2 text-base">🌐</span>网络中继</div>
+              <div id="dropdown-ping-display" class="text-[10px] font-mono font-bold text-gray-400 bg-gray-50 dark:bg-gray-950 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700 group-hover:border-blue-300">测速..</div>
+            </button>
+
+            <button onclick="openChangeLocalPwdModal()" class="flex items-center w-full px-3 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition text-left text-gray-700 dark:text-gray-300 font-bold">
+              <span class="mr-2 text-base">🔑</span>修改密码
+            </button>
+
+            <button onclick="openBlacklistModal()" class="flex items-center w-full px-3 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition text-left text-gray-700 dark:text-gray-300 font-bold">
+              <span class="mr-2 text-base">🚫</span>黑名单管理
+            </button>
+
+            <button onclick="showAppAbout()" class="flex items-center w-full px-3 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition text-left text-gray-700 dark:text-gray-300 font-bold">
+              <span class="mr-2 text-base">ℹ️</span>关于系统
+            </button>
+
+            <div class="h-px bg-gray-100 dark:bg-gray-800 my-1"></div>
+
+            <button onclick="actionDropdown('logout')" class="flex items-center w-full px-3 py-2.5 text-sm hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition text-left text-red-500 dark:text-red-400 font-bold mt-1">
+              <span class="mr-2 text-base">🚪</span>注销当前账号
+            </button>
+          </div>
+        </div>
+
+        <div class="w-px h-6 bg-gray-300 dark:bg-gray-700 mx-1"></div>
+
+        <button onclick="toggleSelectMode()" id="btn-select" class="text-sm font-bold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-3 py-1.5 md:py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition active:scale-95">多选</button>
+        <button onclick="document.getElementById('file-upload').click()" class="text-sm font-bold bg-blue-600 text-white px-4 py-1.5 md:py-2 rounded-lg shadow-md shadow-blue-500/20 hover:bg-blue-700 transition active:scale-95 flex items-center">
+          <svg class="w-4 h-4 md:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+          </svg>
+          <span class="hidden md:inline">上传</span>
+        </button>
+        <input type="file" id="file-upload" accept="image/*" multiple class="hidden" onchange="handleFilesUpload(event)">
+      </div>
+    </header>
+
+
+    <main class="flex-1 overflow-y-auto no-scrollbar p-2 md:p-4 pb-24 relative bg-[#f9fafb] dark:bg-[#030712]" id="gallery-container">
+      <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 hidden pointer-events-none">
+        <svg class="w-16 h-16 mb-4 text-gray-300 dark:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+        </svg>
+        <span class="text-sm font-bold">相册空空如也，点击右上角上传吧</span>
+      </div>
+      <div id="gallery-grid" class="masonry-grid"></div>
+    </main>
+
+
+    <div id="selection-bar" class="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200 dark:border-gray-700 px-6 py-3 rounded-full shadow-2xl flex items-center space-x-6 z-30 transition-transform translate-y-24 opacity-0 pointer-events-none">
+      <div class="text-sm font-bold text-blue-600 w-16">已选 <span id="sel-count">0</span></div>
+      <div class="h-6 w-px bg-gray-300 dark:bg-gray-700"></div>
+
+      <button onclick="shareSelected()" class="text-indigo-500 hover:text-indigo-600 transition active:scale-95" title="分享给好友">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+        </svg>
+      </button>
+      <button onclick="deleteSelected()" class="text-red-500 hover:text-red-600 transition active:scale-95" title="永久删除">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+        </svg>
+      </button>
+      <button onclick="toggleSelectMode()" class="text-gray-500 hover:text-gray-800 dark:hover:text-white transition active:scale-95" title="取消">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+
+  <div id="profile-modal" class="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm hidden flex flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-4">
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-200 dark:border-gray-800 overflow-hidden transform scale-95 transition-transform duration-300" id="profile-modal-content">
+      <div class="h-16 bg-gradient-to-br from-blue-500 to-indigo-600 flex justify-between items-center px-4">
+        <h3 class="text-white font-bold">个人资料设置</h3>
+        <button onclick="closeProfileModal()" class="text-white bg-black/20 hover:bg-black/40 rounded-full p-1.5 transition active:scale-95">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="p-5 flex flex-col space-y-4 max-h-[70vh] overflow-y-auto no-scrollbar">
+
+        <div class="flex space-x-4 items-center mb-2">
+          <div class="relative shrink-0 group">
+            <div id="profile-avatar-preview" class="w-16 h-16 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center font-bold text-2xl overflow-hidden cursor-pointer shadow-sm border border-gray-200 dark:border-gray-700 transition" onclick="document.getElementById('avatar-upload').click()" title="点击更换头像">
+
+            </div>
+            <div class="absolute inset-0 bg-black/40 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition pointer-events-none text-white cursor-pointer">
+              <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+              <span class="text-[9px] font-bold">换图</span>
+            </div>
+            <input type="file" id="avatar-upload" accept="image/*" class="hidden" onchange="handleAvatarUpload(event)">
+          </div>
+          <div class="flex-1 space-y-3">
+            <div>
+              <input type="text" id="edit-name" placeholder="填写您的展示昵称..." class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2.5 text-sm outline-none focus:ring-2 font-bold transition">
+            </div>
+            <div>
+              <input type="text" id="edit-avatar" placeholder="在此粘贴头像 URL 亦可" class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2.5 text-[10px] outline-none focus:ring-2 text-gray-500 transition" onchange="updateProfilePreview()">
+            </div>
+          </div>
+        </div>
+
+
+        <div class="border-t border-gray-200 dark:border-gray-800 pt-3 pb-1">
+          <div class="flex justify-between items-end mb-1.5 px-1">
+            <label class="block text-xs font-bold text-gray-500">云端相册容量</label>
+            <span id="profile-storage-text" class="text-[10px] text-gray-400 font-mono">读取中...</span>
+          </div>
+          <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-1.5 mb-1 overflow-hidden border border-gray-100 dark:border-gray-800/50">
+            <div id="profile-storage-bar" class="bg-blue-500 h-1.5 rounded-full transition-all duration-700 w-0"></div>
+          </div>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-800 pt-3">
+          <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">Npub 公钥</label>
+          <div class="flex items-center bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-1">
+            <input type="text" id="profile-npub" readonly class="w-full bg-transparent text-[11px] text-gray-500 font-mono outline-none px-2 truncate">
+            <button onclick="showQrCode('公钥二维码', document.getElementById('profile-npub').value)" class="text-blue-500 hover:bg-blue-100 dark:hover:bg-gray-700 rounded p-1.5 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 3h6v3h-6v-3zm0-3h3v3h-3v-3zm3 0h3v3h-3v-3z"></path>
+              </svg></button>
+            <button onclick="copyText('profile-npub')" class="text-blue-500 hover:bg-blue-100 dark:hover:bg-gray-700 rounded p-1.5 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+              </svg></button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-red-500 mb-1 ml-1">Nsec 私钥 (须验证密码)</label>
+          <div class="flex items-center bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg p-1">
+            <input type="password" id="profile-nsec" readonly value="••••••••••••••••••••••••" class="w-full bg-transparent text-[11px] text-red-500 font-mono outline-none px-2 truncate">
+            <button onclick="actionWithPassword('toggleKey')" id="btn-show-key" class="text-xs font-bold text-gray-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded px-2 py-1.5 transition whitespace-nowrap">显示</button>
+            <button onclick="actionWithPassword('showQrKey')" class="text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded p-1.5 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 3h6v3h-6v-3zm0-3h3v3h-3v-3zm3 0h3v3h-3v-3z"></path>
+              </svg></button>
+            <button onclick="actionWithPassword('copyKey')" class="text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded p-1.5 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+              </svg></button>
+          </div>
+        </div>
+
+        <button onclick="saveProfile()" class="w-full mt-4 bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition shadow active:scale-95">保存资料同步</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="contacts-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-[140] flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[85vh]">
+      <div class="h-14 bg-indigo-500 flex justify-between items-center px-4 shrink-0">
+        <h3 class="text-white font-bold flex items-center"><svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+          </svg> 我的通讯录</h3>
+        <button onclick="document.getElementById('contacts-modal').classList.add('hidden')" class="text-white hover:bg-black/20 rounded-full p-1.5 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="p-4 shrink-0 border-b border-gray-100 dark:border-gray-800">
+        <div class="flex space-x-2">
+          <input type="text" id="add-contact-input" placeholder="粘贴 Npub 加新朋友..." class="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 font-mono">
+          <button onclick="addContact()" class="bg-indigo-600 text-white px-4 rounded-lg text-sm font-bold hover:bg-indigo-700 transition shadow-sm active:scale-95">添加</button>
+        </div>
+      </div>
+      <div id="contacts-list-manage" class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1"></div>
+    </div>
+  </div>
+
+
+  <div id="share-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-[150] flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-200 dark:border-gray-800 flex flex-col max-h-[80vh]">
+      <h3 class="text-lg font-bold mb-2 shrink-0">选择收件人</h3>
+      <p class="text-[11px] text-gray-500 dark:text-gray-400 mb-4 shrink-0">支持多选群发，系统会为您打包分发独立密钥并通知对方。</p>
+
+
+      <div id="share-single-preview" class="hidden mb-4 flex items-center p-2 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shrink-0">
+        <img id="share-single-img" src="" class="w-10 h-10 rounded object-cover mr-3 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="flex-1 min-w-0">
+          <div class="text-xs font-bold truncate text-gray-700 dark:text-gray-300">单图加密分享</div>
+          <div class="text-[9px] text-gray-500 truncate">将为目标生成独立鉴权密钥</div>
+        </div>
+      </div>
+
+      <input type="text" id="share-target-npub" placeholder="可选：粘贴单个 Npub 临时分享..." class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 text-[11px] focus:ring-2 outline-none font-mono mb-3 shrink-0">
+
+      <div class="text-[11px] font-bold text-gray-500 mb-2 px-1 flex justify-between items-center">
+        <span>从通讯录选择 (可多选)</span>
+        <button onclick="document.getElementById('share-modal').classList.add('hidden'); openContactsModal();" class="text-indigo-500 hover:underline">管理通讯录</button>
+      </div>
+
+      <div id="share-contacts-list" class="flex-1 overflow-y-auto custom-scrollbar border border-gray-200 dark:border-gray-700 rounded-lg p-2 space-y-1 mb-4 bg-gray-50/50 dark:bg-gray-800/30">
+
+      </div>
+
+      <div class="mt-2 flex justify-end space-x-3 shrink-0">
+        <button onclick="document.getElementById('share-modal').classList.add('hidden')" class="px-5 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition">取消</button>
+        <button onclick="confirmShare()" class="px-5 py-2.5 text-sm font-bold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm active:scale-95">加密发送</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="sender-action-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-[160] flex items-center justify-center p-4" onclick="if(event.target===this) this.classList.add('hidden')">
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-xs border border-gray-200 dark:border-gray-800 p-6 flex flex-col items-center">
+      <div id="sender-action-avatar" class="w-16 h-16 rounded-full mb-3 shadow-sm border border-gray-200 dark:border-gray-700"></div>
+      <h3 id="sender-action-name" class="font-bold text-lg text-gray-900 dark:text-white mb-1"></h3>
+      <p id="sender-action-npub" class="text-[10px] font-mono text-gray-400 mb-6 truncate w-full text-center"></p>
+
+      <div class="w-full space-y-3">
+        <button id="btn-sender-add-contact" class="w-full bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 py-2.5 rounded-xl font-bold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition active:scale-95 flex items-center justify-center">
+          <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+          </svg> 添加到通讯录
+        </button>
+        <button id="btn-sender-block" class="w-full bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 py-2.5 rounded-xl font-bold hover:bg-red-100 dark:hover:bg-red-900/50 transition active:scale-95 flex items-center justify-center">
+          <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+          </svg> 移入黑名单
+        </button>
+        <button onclick="document.getElementById('sender-action-modal').classList.add('hidden')" class="w-full text-gray-500 py-2 font-bold text-sm mt-2 hover:text-gray-800 dark:hover:text-white transition">取消</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="blacklist-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-[160] flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[80vh]">
+      <div class="h-14 bg-red-500 flex justify-between items-center px-4 shrink-0">
+        <h3 class="text-white font-bold flex items-center"><svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+          </svg> 黑名单管理</h3>
+        <button onclick="document.getElementById('blacklist-modal').classList.add('hidden')" class="text-white hover:bg-black/20 rounded-full p-1.5 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="p-3 bg-red-50 dark:bg-red-900/10 text-[11px] text-red-600 dark:text-red-400 font-bold border-b border-red-100 dark:border-red-900/30">
+        在此列表中的公钥，发给您的照片将被自动隐藏。
+      </div>
+      <div id="blacklist-list-manage" class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1"></div>
+    </div>
+  </div>
+
+  <div id="qr-display-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[200] flex items-center justify-center p-4" onclick="if(event.target===this) this.classList.add('hidden')">
+    <div class="bg-white p-6 rounded-2xl shadow-2xl flex flex-col items-center max-w-xs w-full">
+      <h3 id="qr-title" class="text-gray-800 font-bold mb-4">二维码</h3>
+      <div id="qr-canvas" class="bg-white p-2 rounded shadow-sm border border-gray-100"></div>
+      <p id="qr-desc" class="text-[10px] text-gray-500 mt-4 text-center break-all font-mono"></p>
+      <button onclick="document.getElementById('qr-display-modal').classList.add('hidden')" class="mt-5 w-full bg-gray-100 text-gray-700 font-bold py-2 rounded-lg hover:bg-gray-200 transition">关闭</button>
+    </div>
+  </div>
+
+
+  <div id="viewer-modal" class="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md hidden flex flex-col items-center justify-center opacity-0 transition-opacity duration-300">
+    <div class="absolute top-0 left-0 w-full p-4 flex justify-between items-center z-50 bg-gradient-to-b from-black/60 to-transparent pointer-events-auto">
+
+      <div id="viewer-sender-info" class="flex items-center space-x-2 text-white transition-all drop-shadow-md"></div>
+      <div class="flex space-x-4">
+        <button id="btn-tracker-viewer" onclick="toggleTrackerPanel()" class="text-white hover:text-indigo-400 transition active:scale-95 p-2 bg-black/20 rounded-full" title="权限追踪与管理">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+          </svg>
+        </button>
+        <button id="btn-rotate-viewer" onclick="rotateViewer()" class="text-white hover:text-green-400 transition active:scale-95 p-2 bg-black/20 rounded-full" title="顺时针旋转90度">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+        </button>
+        <button onclick="downloadCurrentImage()" class="text-white hover:text-blue-400 transition active:scale-95 p-2 bg-black/20 rounded-full" title="下载原图">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+          </svg>
+        </button>
+        <button onclick="closeViewer()" class="text-white hover:text-red-400 transition active:scale-95 p-2 bg-black/20 rounded-full">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="tracker-panel" class="absolute right-0 top-0 bottom-0 w-80 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl z-[60] transform translate-x-full transition-transform duration-300 flex flex-col shadow-2xl border-l border-gray-200 dark:border-gray-800">
+      <div class="h-16 bg-gradient-to-r from-indigo-500 to-purple-600 px-4 flex items-center justify-between shadow-md shrink-0">
+        <h3 class="font-bold text-white text-sm">已分享给：</h3>
+        <div class="flex items-center space-x-2">
+          <button onclick="openShareFromTracker()" class="text-white hover:bg-white/20 px-3 py-1 rounded-full transition text-xs font-bold flex items-center shadow-sm border border-white/30" title="分享给更多好友">
+            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg> 分发
+          </button>
+          <button onclick="toggleTrackerPanel()" class="text-white hover:bg-white/20 p-1.5 rounded-full transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg></button>
+        </div>
+      </div>
+      <div id="tracker-list" class="flex-1 overflow-y-auto p-3 space-y-2">
+
+      </div>
+    </div>
+
+    <div class="w-full h-full flex items-center justify-center relative overflow-hidden" id="viewer-img-container">
+      <div id="viewer-loading" class="absolute flex flex-col items-center justify-center text-blue-500">
+        <div class="loader mb-3"></div>
+        <div class="text-xs font-bold tracking-widest text-white/50">正在解密原图...</div>
+      </div>
+      <img id="viewer-img" class="max-w-full max-h-full object-contain cursor-grab active:cursor-grabbing transition-transform duration-200 select-none opacity-0" src="" style="transform: scale(1);">
+    </div>
+  </div>
+
+
+  <div id="relay-setup-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-[180] flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-200 dark:border-gray-800">
+      <div class="flex items-center space-x-3 mb-2">
+        <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg">🌐</div>
+        <div>
+          <h3 class="text-base font-bold">网络中继设置</h3>
+          <p class="text-[10px] text-gray-500">连接到的后端存储中枢</p>
+        </div>
+      </div>
+      <div class="mt-5">
+        <label class="block text-[11px] font-bold text-gray-500 mb-1 ml-1">自定义 Relay 节点 URL</label>
+        <input type="text" id="modal-relay-url" placeholder="http://127.0.0.1:3009" class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 text-sm focus:ring-2 outline-none font-mono">
+        <p class="text-[10px] text-gray-400 mt-2 px-1">更改后将自动重连，无需重启。</p>
+      </div>
+      <div class="mt-6 flex justify-end space-x-3">
+        <button onclick="document.getElementById('relay-setup-modal').classList.add('hidden')" class="px-5 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition">取消</button>
+        <button onclick="submitNewRelay()" class="px-5 py-2.5 text-sm font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm active:scale-95">保存并重连</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="app-about-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-[200] flex items-center justify-center p-4" onclick="if(event.target===this) this.classList.add('hidden')">
+    <div class="bg-white dark:bg-gray-900 w-full max-w-md rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden transform transition-all">
+      <div class="bg-gradient-to-br from-blue-600 to-indigo-800 p-8 text-center relative">
+        <button onclick="document.getElementById('app-about-modal').classList.add('hidden')" class="absolute top-4 right-4 text-white/50 hover:text-white transition"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg></button>
+        <div class="w-20 h-20 bg-white/10 backdrop-blur-md rounded-3xl mx-auto flex items-center justify-center text-white text-4xl font-black shadow-inner mb-4 border border-white/20">DA</div>
+        <h2 class="text-2xl font-bold text-white mb-1 tracking-wide">DageAlbum</h2>
+      </div>
+      <div class="p-6">
+        <div class="space-y-4 text-sm text-gray-600 dark:text-gray-300">
+          <div class="flex items-start space-x-3">
+            <div class="mt-0.5 text-blue-500">🛡️</div>
+            <div><strong class="text-gray-800 dark:text-white block">绝对数据主权</strong>零信任架构，服务器无法窥视任何图片像素。</div>
+          </div>
+          <div class="flex items-start space-x-3">
+            <div class="mt-0.5 text-indigo-500">🔐</div>
+            <div><strong class="text-gray-800 dark:text-white block">本地金库引擎</strong>私钥通过 PBKDF2+AES-GCM 加密存放，离开此机无人能解。</div>
+          </div>
+          <div class="flex items-start space-x-3">
+            <div class="mt-0.5 text-green-500">📦</div>
+            <div><strong class="text-gray-800 dark:text-white block">端到端分块加密</strong>图片原流在浏览器内完成高强度变异后方才上链。</div>
+          </div>
+          <div class="flex items-start space-x-3">
+            <div class="mt-0.5 text-red-500">💥</div>
+            <div><strong class="text-gray-800 dark:text-white block">物理粉碎技术</strong>撤回授权或主动删图时，远端物理文件将同步被抹除。</div>
+          </div>
+        </div>
+        <div class="mt-6 pt-5 border-t border-gray-100 dark:border-gray-800">
+          <div class="text-xs text-gray-400 font-bold mb-2">Author & Copyright</div>
+          <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center space-x-3">
+              <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs">@</div>
+              <div>
+                <div class="font-bold text-sm text-gray-800 dark:text-white">BTCDAGE</div>
+                <div class="text-[9px] font-mono text-gray-500 w-32 truncate">npub17ahz4xa3hvkvvhh4wguzzqknp8p7l5nyzzqc3z53uq538r5qgn0q40z7pw</div>
+              </div>
+            </div>
+            <button onclick="copyAboutNpub()" class="text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold transition">复制公钥</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="photo-context-menu" class="fixed z-[200] hidden bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl flex-col py-1.5 min-w-[140px] text-sm transform scale-95 opacity-0 transition-all duration-100 origin-top-left pointer-events-none">
+    <button onclick="contextMenuEnableMultiSelect()" class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700/50 flex items-center font-bold text-gray-700 dark:text-gray-300 transition"><svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg> 开启多选</button>
+    <button onclick="contextMenuShare()" class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700/50 flex items-center font-bold text-indigo-500 transition"><svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+      </svg> 分享此图</button>
+    <div class="h-px bg-gray-200 dark:bg-gray-700 my-1"></div>
+    <button onclick="contextMenuDelete()" class="w-full text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center font-bold text-red-500 transition"><svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+      </svg> 删除此图</button>
+  </div>
+
+
+  <div id="ui-dialog-modal" class="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-200">
+    <div id="ui-dialog-box" class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-200 dark:border-gray-800 transform scale-95 transition-transform duration-200 overflow-hidden flex flex-col">
+      <div class="p-6">
+        <h3 id="ui-dialog-title" class="text-lg font-bold mb-3 text-gray-900 dark:text-white">提示</h3>
+        <div id="ui-dialog-content" class="text-sm text-gray-500 dark:text-gray-400 whitespace-pre-line leading-relaxed"></div>
+      </div>
+      <div class="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 flex justify-end space-x-3 border-t border-gray-100 dark:border-gray-800">
+        <button id="ui-dialog-cancel" class="px-4 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition hidden active:scale-95">取消</button>
+        <button id="ui-dialog-confirm" class="px-4 py-2.5 text-sm font-bold text-white rounded-lg transition active:scale-95">确定</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="toast-container" class="fixed top-20 right-4 md:right-8 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <script>
+    function uiAlert(title, message, type = "info") {
+      return new Promise(resolve => {
+        const modal = document.getElementById("ui-dialog-modal"),
+          box = document.getElementById("ui-dialog-box");
+        document.getElementById("ui-dialog-title").innerText = title, document.getElementById("ui-dialog-content").innerText = message,
+          document.getElementById("ui-dialog-cancel").classList.add("hidden");
+        const btnConfirm = document.getElementById("ui-dialog-confirm");
+        btnConfirm.className = "px-5 py-2.5 text-sm font-bold text-white rounded-lg transition shadow-sm active:scale-95 " + ("error" === type ? "bg-red-500 hover:bg-red-600" : "bg-blue-600 hover:bg-blue-700"),
+          btnConfirm.innerText = "我知道了";
+        const handleConfirm = () => (modal.classList.remove("opacity-100"), box.classList.remove("scale-100"),
+          setTimeout(() => {
+            modal.classList.add("hidden"), resolve();
+          }, 200), void btnConfirm.removeEventListener("click", handleConfirm));
+        btnConfirm.addEventListener("click", handleConfirm), modal.classList.remove("hidden"),
+          modal.offsetHeight, modal.classList.add("opacity-100"), box.classList.add("scale-100");
+      });
+    }
+
+    function uiConfirm(title, message, confirmText = "确定", isDanger = !1) {
+      return new Promise(resolve => {
+        const modal = document.getElementById("ui-dialog-modal"),
+          box = document.getElementById("ui-dialog-box");
+        document.getElementById("ui-dialog-title").innerText = title, document.getElementById("ui-dialog-content").innerText = message;
+        const btnCancel = document.getElementById("ui-dialog-cancel");
+        btnCancel.classList.remove("hidden");
+        const btnConfirm = document.getElementById("ui-dialog-confirm");
+        btnConfirm.className = "px-5 py-2.5 text-sm font-bold text-white rounded-lg transition shadow-sm active:scale-95 " + (isDanger ? "bg-red-500 hover:bg-red-600 shadow-red-500/20" : "bg-blue-600 hover:bg-blue-700 shadow-blue-500/20"),
+          btnConfirm.innerText = confirmText;
+        const close = res => {
+            modal.classList.remove("opacity-100"), box.classList.remove("scale-100"), setTimeout(() => {
+              modal.classList.add("hidden"), resolve(res);
+            }, 200), btnConfirm.removeEventListener("click", handleConfirm), btnCancel.removeEventListener("click", handleCancel);
+          },
+          handleConfirm = () => close(!0),
+          handleCancel = () => close(!1);
+        btnConfirm.addEventListener("click", handleConfirm), btnCancel.addEventListener("click", handleCancel),
+          modal.classList.remove("hidden"), modal.offsetHeight, modal.classList.add("opacity-100"),
+          box.classList.add("scale-100");
+      });
+    }
+
+    const APP_VERSION = "v0.1.1";
+
+    let privKeyHex = null,
+      pubKeyHex = null,
+      RELAY_HTTP = "",
+      RELAY_WS = "",
+      ws = null,
+      nt = null,
+      photos = [],
+      isSelectMode = !1,
+      selectedPhotos = new Set,
+      currentGalleryFilter = "all",
+      currentViewingPhotoId = null,
+      contacts = [],
+      globalProfiles = {},
+      profileTimestamps = {},
+      hiddenInboxPhotos = new Set,
+      outboundShares = {},
+      blacklistedPubkeys = new Set,
+      blacklistTimestamp = 0,
+      contextMenuPhotoId = null,
+      isLongPressing = !1,
+      longPressTimer = null,
+      accounts = JSON.parse(localStorage.getItem("album_accounts") || "[]"),
+      pwdContext = null,
+      tempImportSk = null,
+      tempNewNick = null,
+      accountToLogin = null,
+      pendingAction = null;
+
+    async function getV2AesKey(password, saltHex) {
+      const enc = (new TextEncoder).encode(password),
+        keyMaterial = await crypto.subtle.importKey("raw", enc, {
+          name: "PBKDF2"
+        }, !1, ["deriveKey"]),
+        salt = new Uint8Array(saltHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+      return crypto.subtle.deriveKey({
+        name: "PBKDF2",
+        salt: salt,
+        iterations: 1e5,
+        hash: "SHA-256"
+      }, keyMaterial, {
+        name: "AES-GCM",
+        length: 256
+      }, !1, ["encrypt", "decrypt"]);
+    }
+
+    async function aesEncrypt(text, password) {
+      const salt = crypto.getRandomValues(new Uint8Array(16)),
+        saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, "0")).join(""),
+        key = await getV2AesKey(password, saltHex),
+        iv = crypto.getRandomValues(new Uint8Array(12)),
+        enc = (new TextEncoder).encode(text),
+        cipher = await crypto.subtle.encrypt({
+          name: "AES-GCM",
+          iv: iv
+        }, key, enc),
+        combined = new Uint8Array(29 + cipher.byteLength);
+      return combined[0] = 2, combined.set(salt, 1), combined.set(iv, 17), combined.set(new Uint8Array(cipher), 29),
+        Array.from(combined).map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    async function aesDecrypt(hexStr, password) {
+      const bytes = new Uint8Array(hexStr.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+      if (2 === bytes[0] && bytes.length > 29) {
+        const saltHex = Array.from(bytes.slice(1, 17)).map(b => b.toString(16).padStart(2, "0")).join(""),
+          iv = bytes.slice(17, 29),
+          cipher = bytes.slice(29),
+          key = await getV2AesKey(password, saltHex),
+          dec = await crypto.subtle.decrypt({
+            name: "AES-GCM",
+            iv: iv
+          }, key, cipher);
+        return (new TextDecoder).decode(dec);
+      }
+      throw new Error("旧版格式不支持");
+    }
+
+    function base64ToBytes(base64) {
+      const binString = atob(base64.replace(/-/g, "+").replace(/_/g, "/"));
+      return Uint8Array.from(binString, m => m.codePointAt(0));
+    }
+
+    function bytesToBase64(bytes) {
+      const binString = Array.from(bytes, b => String.fromCodePoint(b)).join("");
+      return btoa(binString).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    }
+
+    async function encryptBlob(blob, keyBytes, ivBytes) {
+      const arrBuf = await blob.arrayBuffer(),
+        cryptoKey = await crypto.subtle.importKey("raw", keyBytes, {
+          name: "AES-GCM"
+        }, !1, ["encrypt"]),
+        cipher = await crypto.subtle.encrypt({
+          name: "AES-GCM",
+          iv: ivBytes
+        }, cryptoKey, arrBuf);
+      return new Blob([cipher], {
+        type: "application/octet-stream"
+      });
+    }
+
+    async function decryptBlob(blob, keyBytes, ivBytes) {
+      const arrBuf = await blob.arrayBuffer(),
+        cryptoKey = await crypto.subtle.importKey("raw", keyBytes, {
+          name: "AES-GCM"
+        }, !1, ["decrypt"]),
+        plain = await crypto.subtle.decrypt({
+          name: "AES-GCM",
+          iv: ivBytes
+        }, cryptoKey, arrBuf);
+      return new Blob([plain]);
+    }
+
+    function escapeHTML(str) {
+      return String(str || "").replace(/[&<>'"]/g, tag => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "'": "&#39;",
+        '"': "&quot;"
+      } [tag] || tag));
+    }
+
+    function formatAvatarUrl(pic) {
+      return pic && (pic.startsWith("http") || pic.startsWith("data:")) ? pic : "";
+    }
+
+    function showAddAccountArea() {
+      document.getElementById("account-list-area").classList.add("hidden"), document.getElementById("add-account-area").classList.remove("hidden"),
+        document.getElementById("add-account-area").classList.add("fade-in");
+    }
+
+    function hideAddAccountArea() {
+      document.getElementById("add-account-area").classList.add("hidden"), document.getElementById("account-list-area").classList.remove("hidden");
+    }
+
+    function renderAccountList() {
+      accounts = JSON.parse(localStorage.getItem("album_accounts") || "[]");
+      const list = document.getElementById("saved-accounts-list");
+      list.innerHTML = "", accounts.length > 0 ? (hideAddAccountArea(), accounts.forEach(acc => {
+        const picUrl = formatAvatarUrl(acc.picture),
+          fallback = escapeHTML(acc.name ? acc.name.substring(0, 1) : "我"),
+          nameStr = escapeHTML(acc.name || "未命名"),
+          npubStr = acc.npub.substring(0, 10) + "...",
+          avatar = picUrl ? `<img src="${picUrl}" class="w-10 h-10 rounded-full object-cover">` : `<div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">${fallback}</div>`,
+          div = document.createElement("div");
+        div.className = "flex items-center justify-between p-3 border border-gray-200 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition shadow-sm bg-white dark:bg-gray-900",
+          div.innerHTML = `\n                        <div class="flex items-center space-x-3 flex-1 min-w-0" onclick="promptLogin('${acc.pubkey}')">\n                            ${avatar}\n                            <div class="flex-1 min-w-0 pr-2">\n                                <div class="font-bold text-sm truncate">${nameStr}</div>\n                                <div class="text-[10px] text-gray-400 font-mono mt-0.5 truncate">${npubStr}</div>\n                            </div>\n                        </div>\n                        <button onclick="deleteAccount(event, '${acc.pubkey}')" class="p-2 text-gray-300 hover:text-red-500 transition active:scale-95" title="删除本机记录">\n                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>\n                        </button>\n                    `,
+          list.appendChild(div);
+      })) : showAddAccountArea();
+    }
+
+    async function deleteAccount(e, pk) {
+      e.stopPropagation();
+      await uiConfirm("移除账号", "确定要从本机移除该账号吗？\n所有本地设置将被清除（不影响云端数据）！", "确定移除", !0) && (accounts = accounts.filter(a => a.pubkey !== pk),
+        localStorage.setItem("album_accounts", JSON.stringify(accounts)), renderAccountList());
+    }
+
+    function importAccount() {
+      const input = document.getElementById("sk-input").value.trim();
+      if (!input) return showToast("toast_sys", "请输入私钥", "error");
+      try {
+        const sk = input.startsWith("nsec") ? nt.nip19.decode(input).data : input,
+          pk = nt.getPublicKey(sk);
+        if (accounts.find(a => a.pubkey === pk)) return showToast("toast_sys", "该账号已在列表中！", "error");
+        tempImportSk = sk, tempNewNick = "Imported User", pwdContext = "create_account",
+          document.getElementById("new-nick").classList.add("hidden"), document.getElementById("pwd-setup-title").innerText = "设置安全密码",
+          document.getElementById("new-pwd").value = "", document.getElementById("confirm-pwd").value = "",
+          document.getElementById("pwd-setup-modal").classList.remove("hidden");
+      } catch (e) {
+        showToast("toast_sys", "私钥无效格式！", "error");
+      }
+    }
+
+    function openCreateAccountModal() {
+      tempImportSk = nt.generatePrivateKey(), pwdContext = "create_account", document.getElementById("new-nick").classList.remove("hidden"),
+        document.getElementById("new-nick").value = "", document.getElementById("pwd-setup-title").innerText = "创建新账号",
+        document.getElementById("new-pwd").value = "", document.getElementById("confirm-pwd").value = "",
+        document.getElementById("pwd-setup-modal").classList.remove("hidden");
+    }
+
+    function closePwdSetupModal() {
+      document.getElementById("pwd-setup-modal").classList.add("hidden"), pwdContext = null,
+        tempImportSk = null;
+    }
+
+    async function submitPwdSetup() {
+      const p1 = document.getElementById("new-pwd").value,
+        p2 = document.getElementById("confirm-pwd").value;
+      if (p1.length < 8) return showToast("toast_sys", "密码不能少于 8 位！", "error");
+      if (p1 !== p2) return showToast("toast_sys", "密码不一致！", "error");
+      let nick = tempNewNick;
+      if (!document.getElementById("new-nick").classList.contains("hidden") && (nick = document.getElementById("new-nick").value.trim(),
+          !nick)) return showToast("toast_sys", "请输入展示昵称！", "error");
+      if ("create_account" === pwdContext && tempImportSk) {
+        const pk = nt.getPublicKey(tempImportSk),
+          npub = nt.nip19.npubEncode(pk),
+          encSk = await aesEncrypt(tempImportSk, p1);
+        let rUrl = document.getElementById("new-relay-url").value.trim() || "127.0.0.1:3009";
+        rUrl = (rUrl.startsWith("http") ? rUrl : "http://" + rUrl).replace(/\/+$/, ""),
+          accounts.push({
+            pubkey: pk,
+            npub: npub,
+            name: nick,
+            picture: "",
+            encPrivKey: encSk,
+            relay: rUrl
+          }), localStorage.setItem("album_accounts", JSON.stringify(accounts)), closePwdSetupModal(),
+          showToast("toast_sys", "✅ 账号添加成功并已存入本机！", "success"), renderAccountList();
+      }
+    }
+
+    function promptLogin(pk) {
+      accountToLogin = pk, pwdContext = "login_account", document.getElementById("verify-pwd").value = "",
+        document.getElementById("verify-title").innerText = "登录验证", document.getElementById("pwd-verify-modal").classList.remove("hidden"),
+        setTimeout(() => document.getElementById("verify-pwd").focus(), 100);
+    }
+
+    function actionWithPassword(action) {
+      if ("toggleKey" === action && "text" === document.getElementById("profile-nsec").type) return document.getElementById("profile-nsec").type = "password",
+        document.getElementById("profile-nsec").value = "••••••••••••••••••••••••", void(document.getElementById("btn-show-key").innerText = "显示");
+      pendingAction = action, pwdContext = "action_verify", document.getElementById("verify-pwd").value = "",
+        document.getElementById("verify-title").innerText = "安全验证", document.getElementById("pwd-verify-modal").classList.remove("hidden"),
+        setTimeout(() => document.getElementById("verify-pwd").focus(), 100);
+    }
+
+    function closePwdVerifyModal() {
+      document.getElementById("pwd-verify-modal").classList.add("hidden"), pwdContext = null,
+        pendingAction = null;
+    }
+
+    async function submitPwdVerify() {
+      const pwd = document.getElementById("verify-pwd").value;
+      if (pwd) try {
+        if ("login_account" === pwdContext) {
+          const acc = accounts.find(a => a.pubkey === accountToLogin);
+          if (!acc) throw new Error("账号数据丢失");
+          const skHex = await aesDecrypt(acc.encPrivKey, pwd);
+          pubKeyHex = acc.pubkey, privKeyHex = skHex, RELAY_HTTP = acc.relay || "http://127.0.0.1:3009",
+            RELAY_WS = RELAY_HTTP.replace("http", "ws"), sessionStorage.setItem("album_session_pk", pubKeyHex),
+            sessionStorage.setItem("album_session_sk", privKeyHex), sessionStorage.setItem("album_relay", RELAY_HTTP),
+            closePwdVerifyModal(), document.getElementById("login-screen").classList.add("hidden"),
+            document.getElementById("app-screen").classList.replace("hidden", "flex"), photos = [],
+            selectedPhotos.clear(), contacts = [], hiddenInboxPhotos.clear(), outboundShares = {},
+            renderGallery(), updateHeaderProfile(), initWebSocket();
+        } else if ("action_verify" === pwdContext) {
+          const acc = accounts.find(a => a.pubkey === pubKeyHex),
+            realSk = await aesDecrypt(acc.encPrivKey, pwd),
+            actionToExec = pendingAction;
+          closePwdVerifyModal(), pendingAction = actionToExec, executePendingAction(realSk);
+        }
+      } catch (e) {
+        console.error(e), showToast("toast_sys", "❌ 验证失败，密码错误！", "error"), document.getElementById("verify-pwd").value = "";
+      }
+    }
+
+    function executePendingAction(sk) {
+      if (pendingAction) {
+        try {
+          const nsec = nt.nip19.nsecEncode(sk);
+          if ("toggleKey" === pendingAction) {
+            const input = document.getElementById("profile-nsec"),
+              btn = document.getElementById("btn-show-key");
+            input.value = nsec, input.type = "text", btn.innerText = "隐藏";
+          } else if ("copyKey" === pendingAction) {
+            const temp = document.createElement("textarea");
+            temp.value = nsec, document.body.appendChild(temp), temp.select(), document.execCommand("copy"),
+              temp.remove(), showToast("toast_sys", "✅ 私钥已复制，请妥善保管！", "success");
+          } else "showQrKey" === pendingAction && (closeProfileModal(), setTimeout(() => showQrCode("绝密私钥二维码", nsec), 350));
+        } catch (err) {
+          showToast("toast_sys", "操作异常: " + err, "error");
+        }
+        pendingAction = null;
+      }
+    }
+
+    function openContactsModal() {
+      renderManageContacts(), document.getElementById("contacts-modal").classList.remove("hidden");
+    }
+
+    function renderManageContacts() {
+      const listEl = document.getElementById("contacts-list-manage");
+      listEl.innerHTML = "", 0 !== contacts.length ? contacts.forEach(pk => {
+        const prof = globalProfiles[pk] || {},
+          displayName = prof.name || prof.display_name || pk.substring(0, 8),
+          picHtml = prof.picture ? `<img src="${formatAvatarUrl(prof.picture)}" class="w-10 h-10 rounded-full object-cover shrink-0 border border-gray-200">` : `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">${escapeHTML(displayName).substring(0, 1)}</div>`,
+          div = document.createElement("div");
+        div.className = "flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl",
+          div.innerHTML = `${picHtml}\n                            <div class="flex-1 min-w-0">\n                                <div class="text-sm font-bold truncate">${escapeHTML(displayName)}</div>\n                                <div class="text-[10px] text-gray-500 font-mono truncate">${nt.nip19.npubEncode(pk).substring(0, 16)}...</div>\n                            </div>\n                            <div class="flex items-center space-x-2 shrink-0">\n                                <button onclick="copyContactPubkey('${pk}')" class="text-blue-500 hover:text-blue-600 transition p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg active:scale-95" title="复制 Npub 公钥"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>\n                                <button onclick="removeContact('${pk}')" class="text-red-400 hover:text-red-600 transition p-2 bg-red-50 dark:bg-red-900/20 rounded-lg active:scale-95" title="删除联系人"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>\n                            </div>`,
+          listEl.appendChild(div);
+      }) : listEl.innerHTML = '<div class="text-center text-xs text-gray-400 py-6">通讯录为空，快去添加第一位好友吧</div>';
+    }
+
+    function copyContactPubkey(pk) {
+      const npub = nt.nip19.npubEncode(pk),
+        temp = document.createElement("textarea");
+      temp.value = npub, document.body.appendChild(temp), temp.select(), document.execCommand("copy"),
+        temp.remove(), showToast("toast_copy", "✅ 复制公钥成功", "success");
+    }
+
+    async function addContact() {
+      const input = document.getElementById("add-contact-input").value.trim();
+      if (!input) return;
+      let targetHex = "";
+      try {
+        if (targetHex = input.startsWith("npub") ? nt.nip19.decode(input).data : input,
+          !/^[0-9a-f]{64}$/i.test(targetHex)) throw new Error;
+      } catch (e) {
+        return showToast("toast_sys", "无效的 Npub 格式！", "error");
+      }
+      return targetHex === pubKeyHex ? showToast("toast_sys", "不能添加自己为好友！", "error") : contacts.includes(targetHex) ? showToast("toast_sys", "该好友已在您的通讯录中！", "error") : (contacts.push(targetHex),
+        document.getElementById("add-contact-input").value = "", await syncContacts(), renderManageContacts(),
+        void(ws && ws.readyState === WebSocket.OPEN && ws.send(JSON.stringify(["REQ", "new-contact", {
+          kinds: [0],
+          authors: [targetHex]
+        }]))));
+    }
+
+    async function removeContact(pk) {
+      await uiConfirm("移除联系人", "确定要从通讯录中移除此人吗？\n（注：这不会撤回之前发给他的照片，撤回照片权限请用查看器的雷达面板操作）", "确定移除", !0) && (contacts = contacts.filter(c => c !== pk),
+        await syncContacts(), renderManageContacts());
+    }
+
+    async function syncContacts() {
+      const ev = {
+        kind: 3,
+        created_at: Math.floor(Date.now() / 1e3),
+        tags: contacts.map(c => ["p", c]),
+        content: "",
+        pubkey: pubKeyHex
+      };
+      ev.id = nt.getEventHash(ev), ev.sig = nt.getSignature(ev, privKeyHex), ws && ws.readyState === WebSocket.OPEN && ws.send(JSON.stringify(["EVENT", ev]));
+    }
+
+    async function syncBlacklist() {
+      const ev = {
+        kind: 1e4,
+        created_at: Math.floor(Date.now() / 1e3),
+        tags: Array.from(blacklistedPubkeys).map(c => ["p", c]),
+        content: "",
+        pubkey: pubKeyHex
+      };
+      ev.id = nt.getEventHash(ev), ev.sig = nt.getSignature(ev, privKeyHex), ws && ws.readyState === WebSocket.OPEN && ws.send(JSON.stringify(["EVENT", ev]));
+    }
+
+    function openSenderActionModal(targetPk) {
+      const prof = globalProfiles[targetPk] || {},
+        displayName = prof.name || prof.display_name || targetPk.substring(0, 8),
+        npub = nt.nip19.npubEncode(targetPk);
+      document.getElementById("sender-action-name").innerText = escapeHTML(displayName),
+        document.getElementById("sender-action-npub").innerText = npub.substring(0, 16) + "..." + npub.slice(-6);
+      const avBox = document.getElementById("sender-action-avatar"),
+        cleanPic = formatAvatarUrl(prof.picture ? prof.picture.trim().replace(/['"\n\r]/g, "") : "");
+      avBox.innerHTML = cleanPic ? `<img src="${cleanPic}" class="w-full h-full rounded-full object-cover bg-gray-100">` : `<div class="w-full h-full rounded-full bg-indigo-500 flex items-center justify-center text-xl text-white font-bold">${escapeHTML(displayName.substring(0, 1))}</div>`;
+      const btnAdd = document.getElementById("btn-sender-add-contact");
+      contacts.includes(targetPk) ? btnAdd.classList.add("hidden") : (btnAdd.classList.remove("hidden"),
+        btnAdd.onclick = async () => {
+          contacts.push(targetPk), await syncContacts(), renderManageContacts(), document.getElementById("sender-action-modal").classList.add("hidden"),
+            showToast("toast_add_c", `✅ 已将 ${escapeHTML(displayName)} 添加到通讯录`, "success");
+        });
+      document.getElementById("btn-sender-block").onclick = async () => {
+        await uiConfirm("加入黑名单", `确定要拉黑 ${escapeHTML(displayName)} 吗？\n拉黑后，对方发来的所有照片将从您的相册中彻底隐藏。`, "确定拉黑", !0) && (blacklistedPubkeys.add(targetPk),
+          await syncBlacklist(), document.getElementById("sender-action-modal").classList.add("hidden"),
+          renderGallery(), showToast("toast_block", "🚫 已拉黑该用户", "success"));
+      }, document.getElementById("sender-action-modal").classList.remove("hidden");
+    }
+
+    function openBlacklistModal() {
+      const dropdown = document.getElementById("settings-dropdown");
+      dropdown && dropdown.classList.add("opacity-0", "scale-95", "pointer-events-none"),
+        renderBlacklist(), document.getElementById("blacklist-modal").classList.remove("hidden");
+    }
+
+    function renderBlacklist() {
+      const listEl = document.getElementById("blacklist-list-manage");
+      listEl.innerHTML = "", 0 !== blacklistedPubkeys.size ? Array.from(blacklistedPubkeys).forEach(pk => {
+        const prof = globalProfiles[pk] || {},
+          displayName = prof.name || prof.display_name || pk.substring(0, 8),
+          picHtml = prof.picture ? `<img src="${formatAvatarUrl(prof.picture)}" class="w-10 h-10 rounded-full object-cover shrink-0 grayscale border border-gray-200">` : `<div class="w-10 h-10 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">${escapeHTML(displayName).substring(0, 1)}</div>`,
+          div = document.createElement("div");
+        div.className = "flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 opacity-80 hover:opacity-100 transition",
+          div.innerHTML = `${picHtml}\n                                            <div class="flex-1 min-w-0">\n                                                <div class="text-sm font-bold truncate text-gray-700 dark:text-gray-300 line-through decoration-red-500">${escapeHTML(displayName)}</div>\n                                                <div class="text-[10px] text-gray-500 font-mono truncate">${nt.nip19.npubEncode(pk).substring(0, 16)}...</div>\n                                            </div>\n                                            <button onclick="unblockUser('${pk}')" class="text-xs bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-lg font-bold hover:bg-gray-100 dark:hover:bg-gray-600 transition active:scale-95 shrink-0 shadow-sm">移除</button>`,
+          listEl.appendChild(div);
+      }) : listEl.innerHTML = '<div class="text-center text-xs text-gray-400 py-8">您的黑名单为空</div>';
+    }
+
+    async function unblockUser(pk) {
+      blacklistedPubkeys.delete(pk), await syncBlacklist(), renderBlacklist(), renderGallery(),
+        showToast("toast_unblock", "✅ 已解除拉黑，照片恢复显示", "success");
+    }
+
+    function renderShareContacts() {
+      const listEl = document.getElementById("share-contacts-list");
+      0 !== contacts.length ? (listEl.innerHTML = "", contacts.forEach(pk => {
+        const prof = globalProfiles[pk] || {},
+          displayName = prof.name || prof.display_name || pk.substring(0, 8),
+          picHtml = prof.picture ? `<img src="${formatAvatarUrl(prof.picture)}" class="w-8 h-8 rounded-full object-cover shrink-0">` : `<div class="w-8 h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-xs shrink-0">${escapeHTML(displayName).substring(0, 1)}</div>`,
+          label = document.createElement("label");
+        label.className = "flex items-center space-x-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg cursor-pointer transition",
+          label.innerHTML = `\n                            <input type="checkbox" value="${pk}" class="share-checkbox w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">\n                            ${picHtml}\n                            <div class="flex-1 min-w-0">\n                                <div class="text-sm font-bold truncate">${escapeHTML(displayName)}</div>\n                                <div class="text-[10px] text-gray-500 font-mono truncate">${nt.nip19.npubEncode(pk).substring(0, 12)}...</div>\n                            </div>`,
+          listEl.appendChild(label);
+      })) : listEl.innerHTML = '<div class="text-xs text-gray-400 text-center py-6">您的通讯录空空如也，点击右上角去加好友吧</div>';
+    }
+
+    async function confirmShare() {
+      const checkedBoxes = document.querySelectorAll(".share-checkbox:checked");
+      let targetHexes = Array.from(checkedBoxes).map(cb => cb.value);
+      const manualInput = document.getElementById("share-target-npub").value.trim();
+      if (manualInput) try {
+        const h = manualInput.startsWith("npub") ? nt.nip19.decode(manualInput).data : manualInput;
+        /^[0-9a-f]{64}$/i.test(h) && h !== pubKeyHex && targetHexes.push(h);
+      } catch (e) {}
+      if (0 === targetHexes.length) return alert("请至少在下方勾选一个联系人，或粘贴有效公钥！");
+      targetHexes = [...new Set(targetHexes)], document.getElementById("share-modal").classList.add("hidden");
+      const toastId = "toast_share_" + Date.now();
+      showToast(toastId, `正在为 ${targetHexes.length} 位目标生成加密授权...`, "loading");
+      let photoSuccessCount = 0;
+      const idsToShare = "single" === shareTargetMode || "context" === shareTargetMode ? [singleSharePhotoId] : Array.from(selectedPhotos);
+      for (let id of idsToShare) {
+        const p = photos.find(x => x.id === id);
+        if (!p || p.isShared) continue;
+        const meta = {
+            orig: p.orig,
+            thumb: p.thumb,
+            k: p.k,
+            iv: p.iv,
+            ts: p.ts,
+            r: p.r
+          },
+          plainStr = JSON.stringify(meta);
+        for (let tHex of targetHexes) try {
+          const cipherMeta = await nt.nip04.encrypt(privKeyHex, tHex, plainStr),
+            ev = {
+              kind: 30401,
+              created_at: Math.floor(Date.now() / 1e3),
+              tags: [
+                ["p", tHex],
+                ["e", p.id],
+                ["client", "dage-album"]
+              ],
+              content: cipherMeta,
+              pubkey: pubKeyHex
+            };
+          ev.id = nt.getEventHash(ev), ev.sig = nt.getSignature(ev, privKeyHex), ws && ws.readyState === WebSocket.OPEN && (ws.send(JSON.stringify(["EVENT", ev])),
+            outboundShares[p.id] || (outboundShares[p.id] = {}), outboundShares[p.id][tHex] = ev.id,
+            photoSuccessCount++);
+        } catch (e) {}
+      }
+      if (photoSuccessCount > 0 && ws && ws.readyState === WebSocket.OPEN)
+        for (let tHex of targetHexes) try {
+          const dmText = "📸 我给你分享了加密照片，快去 DageAlbum 相册查收！",
+            cipherDm = await nt.nip04.encrypt(privKeyHex, tHex, dmText),
+            dmEv = {
+              kind: 4,
+              created_at: Math.floor(Date.now() / 1e3),
+              tags: [
+                ["p", tHex],
+                ["client", "dage-album"]
+              ],
+              content: cipherDm,
+              pubkey: pubKeyHex
+            };
+          dmEv.id = nt.getEventHash(dmEv), dmEv.sig = nt.getSignature(dmEv, privKeyHex), ws.send(JSON.stringify(["EVENT", dmEv]));
+        } catch (e) {}
+      if (showToast(toastId, "✅ 成功发送！权限已更新。", "success"), "single" === shareTargetMode) {
+        renderTrackerList();
+        const trackerBtn = document.getElementById("btn-tracker-viewer");
+        trackerBtn && (trackerBtn.className = "text-green-400 hover:text-green-300 transition active:scale-95 p-2 bg-black/50 rounded-full shadow-[0_0_10px_rgba(74,222,128,0.4)]");
+      } else "multi" === shareTargetMode ? toggleSelectMode() : "context" === shareTargetMode && renderGallery();
+    }
+
+    window.crypto && window.crypto.subtle || setTimeout(() => uiAlert("安全环境异常", "未检测到 WebCrypto 加密引擎！\n请务必使用 HTTPS 协议或 localhost 访问，否则无法加解密相册。", "error"), 500),
+      window.onload = () => {
+        initTheme(), nt = window.NostrTools;
+        const verEl = document.getElementById("login-version-display");
+        verEl && (verEl.innerText = "v0.1.1");
+        const sessionPk = sessionStorage.getItem("album_session_pk"),
+          sessionSk = sessionStorage.getItem("album_session_sk"),
+          sessionUrl = sessionStorage.getItem("album_relay");
+        sessionPk && sessionSk && sessionUrl ? (pubKeyHex = sessionPk, privKeyHex = sessionSk,
+          RELAY_HTTP = sessionUrl, RELAY_WS = sessionUrl.replace("http", "ws"), document.getElementById("login-screen").classList.add("hidden"),
+          document.getElementById("app-screen").classList.replace("hidden", "flex"), updateHeaderProfile(),
+          initWebSocket()) : renderAccountList();
+      };
+
+    let shareTargetMode = "multi",
+      singleSharePhotoId = null;
+
+    function shareSelected() {
+      if (0 === selectedPhotos.size) return;
+      const ids = Array.from(selectedPhotos);
+      for (let id of ids) {
+        const p = photos.find(x => x.id === id);
+        if (p && p.isShared) return void uiAlert("权限限制", "为保护隐私，您不能转发他人共享给您的私人照片！", "error");
+      }
+      shareTargetMode = "multi", document.getElementById("share-single-preview").classList.add("hidden"),
+        document.getElementById("share-target-npub").value = "", renderShareContacts(),
+        document.getElementById("share-modal").classList.remove("hidden");
+    }
+
+    function openShareFromTracker() {
+      const p = photos.find(x => x.id === currentViewingPhotoId);
+      p && (shareTargetMode = "single", singleSharePhotoId = p.id, p.blobUrl ? (document.getElementById("share-single-img").src = p.blobUrl,
+          document.getElementById("share-single-preview").classList.remove("hidden")) : document.getElementById("share-single-preview").classList.add("hidden"),
+        document.getElementById("share-target-npub").value = "", renderShareContacts(),
+        document.getElementById("share-modal").classList.remove("hidden"));
+    }
+
+    function initWebSocket() {
+      const statusEl = document.getElementById("conn-status");
+      statusEl.innerText = "🟡 正在连接...", ws && ws.close(), ws = new WebSocket(RELAY_WS),
+        ws.onopen = () => {
+          statusEl.innerText = "🟢 已安全连接", statusEl.className = "text-[10px] md:text-xs text-green-500 font-bold";
+          const req1 = ["REQ", "my-album", {
+              kinds: [0, 3, 5, 1e4, 30400, 30401],
+              authors: [pubKeyHex],
+              limit: 500
+            }],
+            req2 = ["REQ", "shared-with-me", {
+              kinds: [30401, 4],
+              "#p": [pubKeyHex],
+              limit: 500
+            }];
+          ws.send(JSON.stringify(req1)), ws.send(JSON.stringify(req2));
+        }, ws.onmessage = async e => {
+          const msg = JSON.parse(e.data);
+          if ("EVENT" === msg[0]) {
+            const ev = msg[2];
+            if (0 === ev.kind) try {
+              if ((profileTimestamps[ev.pubkey] || 0) >= ev.created_at) return;
+              profileTimestamps[ev.pubkey] = ev.created_at;
+              const p = JSON.parse(ev.content);
+              if (globalProfiles[ev.pubkey] = p, ev.pubkey === pubKeyHex) {
+                const accIdx = accounts.findIndex(a => a.pubkey === pubKeyHex);
+                let changed = !1;
+                p.name && accounts[accIdx].name !== p.name && (accounts[accIdx].name = p.name, changed = !0),
+                  p.picture && accounts[accIdx].picture !== p.picture && (accounts[accIdx].picture = p.picture,
+                    changed = !0), changed && (localStorage.setItem("album_accounts", JSON.stringify(accounts)),
+                    updateHeaderProfile(), updateProfilePreview());
+              } else "function" == typeof renderShareContacts && renderShareContacts(), "function" == typeof renderGallery && renderGallery();
+            } catch (err) {} else if (3 === ev.kind && ev.pubkey === pubKeyHex) {
+              if (contacts = ev.tags.filter(t => "p" === t[0]).map(t => t[1]), "function" == typeof renderShareContacts && renderShareContacts(),
+                contacts.length > 0) {
+                const unknown = contacts.filter(pk => !globalProfiles[pk]);
+                unknown.length > 0 && ws.send(JSON.stringify(["REQ", "contacts-meta", {
+                  kinds: [0],
+                  authors: unknown
+                }]));
+              }
+            } else if (5 === ev.kind && ev.pubkey === pubKeyHex) ev.tags.filter(t => "e" === t[0]).forEach(t => {
+              hiddenInboxPhotos.add(t[1]), photos = photos.filter(p => p.id !== t[1]);
+            }), "function" == typeof renderGallery && renderGallery();
+            else if (1e4 === ev.kind && ev.pubkey === pubKeyHex) {
+              if (blacklistTimestamp >= ev.created_at) return;
+              blacklistTimestamp = ev.created_at, blacklistedPubkeys = new Set(ev.tags.filter(t => "p" === t[0]).map(t => t[1])),
+                "function" == typeof renderGallery && renderGallery();
+            } else 30400 !== ev.kind && 30401 !== ev.kind || await handleIncomingMetadata(ev);
+          }
+        }, ws.onclose = () => {
+          statusEl.innerText = "🔴 重连中...", statusEl.className = "text-[10px] md:text-xs text-red-500 font-bold",
+            setTimeout(initWebSocket, 3e3);
+        };
+    }
+
+    function updateHeaderProfile() {
+      const acc = accounts.find(a => a.pubkey === pubKeyHex);
+      if (!acc) return;
+      const headerNameEl = document.getElementById("header-name");
+      headerNameEl && (headerNameEl.innerText = acc.name ? acc.name + " 的相册" : "我的相册");
+      const avBox = document.getElementById("my-avatar");
+      acc.picture ? avBox.innerHTML = `<img src="${formatAvatarUrl(acc.picture)}" class="w-full h-full object-cover">` : avBox.innerHTML = escapeHTML(acc.name ? acc.name.substring(0, 1) : "我");
+    }
+
+    function openProfileModal() {
+      const acc = accounts.find(a => a.pubkey === pubKeyHex);
+      document.getElementById("edit-name").value = acc ? acc.name : "", document.getElementById("edit-avatar").value = acc ? acc.picture : "",
+        document.getElementById("profile-npub").value = nt.nip19.npubEncode(pubKeyHex),
+        updateProfilePreview();
+      const nsecInput = document.getElementById("profile-nsec");
+      nsecInput.value = "••••••••••••••••••••••••", nsecInput.type = "password", document.getElementById("btn-show-key").innerText = "显示",
+        document.getElementById("profile-storage-text").innerText = "安全连线读取中...", document.getElementById("profile-storage-bar").style.width = "0%",
+        document.getElementById("profile-storage-bar").className = "bg-blue-500 h-1.5 rounded-full transition-all duration-700 w-0",
+        authFetch("GET", "/api/user/info").then(res => res.json()).then(data => {
+          if ("success" === data.status) {
+            const formatBytes = bytes => {
+                if (0 === bytes) return "0 B";
+                const i = Math.floor(Math.log(bytes) / Math.log(1024));
+                return parseFloat((bytes / Math.pow(1024, i)).toFixed(2)) + " " + ["B", "KB", "MB", "GB", "TB"][i];
+              },
+              usedStr = formatBytes(data.used),
+              quotaStr = formatBytes(data.quota),
+              pct = Math.min(100, data.used / data.quota * 100).toFixed(1);
+            document.getElementById("profile-storage-text").innerHTML = `<span class="${pct > 90 ? "text-red-500" : "text-gray-700 dark:text-gray-200"} font-bold">${usedStr}</span> / ${quotaStr}`,
+              document.getElementById("profile-storage-bar").style.width = pct + "%", pct > 90 && document.getElementById("profile-storage-bar").classList.replace("bg-blue-500", "bg-red-500");
+          }
+        }).catch(e => {
+          document.getElementById("profile-storage-text").innerHTML = '<span class="text-red-500">读取失败</span>';
+        });
+      const modal = document.getElementById("profile-modal"),
+        content = document.getElementById("profile-modal-content");
+      modal.classList.remove("hidden"), modal.offsetHeight, modal.classList.remove("opacity-0"),
+        content.classList.remove("scale-95");
+    }
+
+    function updateProfilePreview() {
+      const pic = document.getElementById("edit-avatar").value.trim(),
+        name = document.getElementById("edit-name").value.trim(),
+        previewBox = document.getElementById("profile-avatar-preview");
+      previewBox.innerHTML = pic ? `<img src="${formatAvatarUrl(pic)}" class="w-full h-full object-cover">` : escapeHTML(name ? name.substring(0, 1) : "我");
+    }
+
+    async function handleAvatarUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const toastId = "toast_avatar_" + Date.now();
+      showToast(toastId, "处理并压缩头像...", "loading");
+      try {
+        const {
+          blob: blob
+        } = await processImage(file, 256, .6), reader = new FileReader;
+        reader.onloadend = async () => {
+          document.getElementById("edit-avatar").value = reader.result, updateProfilePreview(),
+            showToast(toastId, "✅ 头像处理完成！自动上链中...", "loading"), await saveProfile(!1), showToast(toastId, "✅ 资料已保存并同步", "success");
+        }, reader.readAsDataURL(blob);
+      } catch (err) {
+        showToast(toastId, "❌ 处理失败", "error");
+      }
+      e.target.value = "";
+    }
+
+    function closeProfileModal() {
+      const modal = document.getElementById("profile-modal"),
+        content = document.getElementById("profile-modal-content");
+      modal.classList.add("opacity-0"), content.classList.add("scale-95"), setTimeout(() => modal.classList.add("hidden"), 300);
+    }
+
+    function toggleSettingsDropdown(e) {
+      e.stopPropagation();
+      const dropdown = document.getElementById("settings-dropdown");
+      dropdown.classList.contains("opacity-0") ? (dropdown.classList.remove("opacity-0", "scale-95", "pointer-events-none"),
+        measureRelayPing()) : dropdown.classList.add("opacity-0", "scale-95", "pointer-events-none");
+    }
+
+    async function measureRelayPing() {
+      const pingDisplay = document.getElementById("dropdown-ping-display");
+      pingDisplay.innerText = "测速..", pingDisplay.className = "text-[10px] font-mono font-bold text-gray-400 bg-gray-50 dark:bg-gray-950 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700";
+      const start = performance.now();
+      try {
+        await fetch(RELAY_HTTP, {
+          method: "HEAD",
+          cache: "no-store"
+        });
+        const ms = Math.round(performance.now() - start);
+        pingDisplay.innerText = ms + " ms", ms < 100 ? pingDisplay.classList.add("text-green-500", "border-green-200", "dark:border-green-900/50") : ms < 300 ? pingDisplay.classList.add("text-yellow-500", "border-yellow-200", "dark:border-yellow-900/50") : pingDisplay.classList.add("text-red-500", "border-red-200", "dark:border-red-900/50");
+      } catch (e) {
+        pingDisplay.innerText = "Err", pingDisplay.classList.add("text-red-500", "border-red-200", "dark:border-red-900/50");
+      }
+    }
+
+    function openRelaySetupModal() {
+      document.getElementById("settings-dropdown").classList.add("opacity-0", "scale-95", "pointer-events-none"),
+        document.getElementById("modal-relay-url").value = RELAY_HTTP, document.getElementById("relay-setup-modal").classList.remove("hidden");
+    }
+
+    function submitNewRelay() {
+      let newUrl = document.getElementById("modal-relay-url").value.trim();
+      if (!newUrl) return showToast("toast_sys", "Relay 地址不能为空", "error");
+      newUrl = (newUrl.startsWith("http") ? newUrl : "http://" + newUrl).replace(/\/+$/, "");
+      const accIdx = accounts.findIndex(a => a.pubkey === pubKeyHex);
+      accIdx > -1 && (accounts[accIdx].relay = newUrl, localStorage.setItem("album_accounts", JSON.stringify(accounts)),
+        RELAY_HTTP = newUrl, RELAY_WS = newUrl.replace("http", "ws"), sessionStorage.setItem("album_relay", RELAY_HTTP),
+        document.getElementById("relay-setup-modal").classList.add("hidden"), document.getElementById("conn-status").innerText = "🔄 重新连接中...",
+        initWebSocket());
+    }
+
+    function openChangeLocalPwdModal() {
+      document.getElementById("settings-dropdown").classList.add("opacity-0", "scale-95", "pointer-events-none"),
+        closeProfileModal(), document.getElementById("change-old-pwd").value = "", document.getElementById("change-new-pwd").value = "",
+        document.getElementById("change-confirm-pwd").value = "", setTimeout(() => document.getElementById("change-pwd-modal").classList.remove("hidden"), 300);
+    }
+
+    async function submitChangeLocalPwd() {
+      const oldPwd = document.getElementById("change-old-pwd").value,
+        newPwd = document.getElementById("change-new-pwd").value,
+        confirmPwd = document.getElementById("change-confirm-pwd").value;
+      if (!oldPwd) return showToast("toast_sys", "请输入旧密码！", "error");
+      if (newPwd.length < 8) return showToast("toast_sys", "新密码不能少于 8 位！", "error");
+      if (newPwd !== confirmPwd) return showToast("toast_sys", "两次输入的新密码不一致！", "error");
+      try {
+        const accIdx = accounts.findIndex(a => a.pubkey === pubKeyHex);
+        if (-1 === accIdx) throw new Error("账号数据异常");
+        const realSk = await aesDecrypt(accounts[accIdx].encPrivKey, oldPwd),
+          newEncSk = await aesEncrypt(realSk, newPwd);
+        accounts[accIdx].encPrivKey = newEncSk, localStorage.setItem("album_accounts", JSON.stringify(accounts)),
+          document.getElementById("change-pwd-modal").classList.add("hidden"), uiAlert("密码修改成功", "本地安全密码修改成功！\n以后的登录请使用新密码。", "success");
+      } catch (e) {
+        showToast("toast_sys", "❌ 验证失败，旧密码错误！", "error"), document.getElementById("change-old-pwd").value = "",
+          document.getElementById("change-old-pwd").focus();
+      }
+    }
+
+    function showAppAbout() {
+      const dropdown = document.getElementById("settings-dropdown");
+      dropdown && dropdown.classList.add("opacity-0", "scale-95", "pointer-events-none"),
+        setTimeout(() => document.getElementById("app-about-modal").classList.remove("hidden"), 100);
+    }
+
+    function actionDropdown(actionType) {
+      const dropdown = document.getElementById("settings-dropdown");
+      dropdown && dropdown.classList.add("opacity-0", "scale-95", "pointer-events-none"),
+        "theme" === actionType ? toggleTheme() : "logout" === actionType && setTimeout(() => logout(), 100);
+    }
+
+    function copyAboutNpub() {
+      const temp = document.createElement("textarea");
+      temp.value = "npub17ahz4xa3hvkvvhh4wguzzqknp8p7l5nyzzqc3z53uq538r5qgn0q40z7pw",
+        document.body.appendChild(temp), temp.select(), document.execCommand("copy"), temp.remove(),
+        uiAlert("复制成功", "✅ 作者 Npub 公钥已复制！\n您可以去通讯录里添加我为好友进行测试。", "success");
+    }
+
+    async function saveProfile(closeAndAlert = !0) {
+      const name = document.getElementById("edit-name").value.trim(),
+        pic = document.getElementById("edit-avatar").value.trim(),
+        event = {
+          kind: 0,
+          created_at: Math.floor(Date.now() / 1e3),
+          tags: [],
+          content: JSON.stringify({
+            name: name,
+            picture: pic
+          }),
+          pubkey: pubKeyHex
+        };
+      event.id = nt.getEventHash(event), event.sig = nt.getSignature(event, privKeyHex),
+        ws && ws.readyState === WebSocket.OPEN && ws.send(JSON.stringify(["EVENT", event]));
+      const accIdx = accounts.findIndex(a => a.pubkey === pubKeyHex);
+      accounts[accIdx].name = name, accounts[accIdx].picture = pic, localStorage.setItem("album_accounts", JSON.stringify(accounts)),
+        updateHeaderProfile(), updateProfilePreview(), closeAndAlert && (closeProfileModal(),
+          showToast("toast_sys", "✅ 资料已保存并同步", "success"));
+    }
+
+    function showQrCode(title, text) {
+      document.getElementById("qr-title").innerText = title, document.getElementById("qr-desc").innerText = text;
+      const canvas = document.getElementById("qr-canvas");
+      canvas.innerHTML = "", new QRCode(canvas, {
+        text: text,
+        width: 200,
+        height: 200,
+        colorDark: "#000",
+        colorLight: "#fff"
+      }), document.getElementById("qr-display-modal").classList.remove("hidden");
+    }
+
+    function copyText(elementId) {
+      const input = document.getElementById(elementId),
+        originalType = input.type;
+      "password" === originalType && (input.type = "text"), input.select(), document.execCommand("copy"),
+        "password" === originalType && (input.type = "password"), showToast("toast_sys", "✅ 复制成功！", "success");
+    }
+
+    function initTheme() {
+      "dark" === localStorage.getItem("dage_theme") || !localStorage.getItem("dage_theme") && window.matchMedia("(prefers-color-scheme: dark)").matches ? document.documentElement.classList.add("dark") : document.documentElement.classList.remove("dark");
+    }
+
+    function toggleTheme() {
+      document.documentElement.classList.toggle("dark"), localStorage.setItem("dage_theme", document.documentElement.classList.contains("dark") ? "dark" : "light");
+    }
+
+    function manualLock() {
+      closeProfileModal(), document.getElementById("app-screen").classList.replace("flex", "hidden"),
+        document.getElementById("login-screen").classList.remove("hidden"), setTimeout(() => {
+          photos.forEach(p => {
+              p.blobUrl && URL.revokeObjectURL(p.blobUrl);
+            }), photos = [], selectedPhotos.clear(), contacts = [], hiddenInboxPhotos.clear(),
+            outboundShares = {}, blacklistedPubkeys.clear(), blacklistTimestamp = 0, document.getElementById("gallery-grid").innerHTML = "",
+            ws && ws.close(), renderAccountList(), promptLogin(pubKeyHex);
+        }, 50);
+    }
+
+    async function logout() {
+      await uiConfirm("注销当前账号", "确定要彻底注销该账号吗？\n这将清空登录会话，退回账号列表。", "确定注销", !0) && (closeProfileModal(),
+        sessionStorage.removeItem("album_session_pk"), sessionStorage.removeItem("album_session_sk"),
+        photos.forEach(p => {
+          p.blobUrl && URL.revokeObjectURL(p.blobUrl);
+        }), photos = [], selectedPhotos.clear(), contacts = [], hiddenInboxPhotos.clear(),
+        outboundShares = {}, blacklistedPubkeys.clear(), blacklistTimestamp = 0, document.getElementById("gallery-grid").innerHTML = "",
+        privKeyHex = null, pubKeyHex = null, ws && ws.close(), document.getElementById("app-screen").classList.replace("flex", "hidden"),
+        document.getElementById("login-screen").classList.remove("hidden"), renderAccountList());
+    }
+
+    async function handleIncomingMetadata(event) {
+      if (30401 === event.kind && event.pubkey === pubKeyHex) {
+        const pTag = event.tags.find(t => "p" === t[0]),
+          eTag = event.tags.find(t => "e" === t[0]);
+        return void(pTag && eTag && (outboundShares[eTag[1]] || (outboundShares[eTag[1]] = {}),
+          outboundShares[eTag[1]][pTag[1]] = event.id));
+      }
+      if (!photos.find(p => p.id === event.id)) try {
+        let senderPubkey = event.pubkey;
+        const plainJsonStr = await nt.nip04.decrypt(privKeyHex, senderPubkey, event.content),
+          meta = JSON.parse(plainJsonStr),
+          isSharedToMe = 30401 === event.kind && event.pubkey !== pubKeyHex,
+          photoObj = {
+            id: event.id,
+            orig: meta.orig,
+            thumb: meta.thumb,
+            k: meta.k,
+            iv: meta.iv,
+            ts: meta.ts || 1e3 * event.created_at,
+            display_ts: isSharedToMe ? 1e3 * event.created_at : meta.ts || 1e3 * event.created_at,
+            blobUrl: null,
+            owner: senderPubkey,
+            isShared: isSharedToMe,
+            r: meta.r || 0
+          };
+        photos.push(photoObj), photos.sort((a, b) => b.display_ts - a.display_ts), renderGallery(),
+          isSharedToMe && !globalProfiles[senderPubkey] && ws && ws.readyState === WebSocket.OPEN && ws.send(JSON.stringify(["REQ", "sender-meta-" + senderPubkey.substring(0, 8), {
+            kinds: [0],
+            authors: [senderPubkey]
+          }]));
+      } catch (err) {}
+    }
+
+    function processImage(file, maxWidth, quality) {
+      return new Promise((resolve, reject) => {
+        const img = new Image;
+        img.onload = () => {
+          URL.revokeObjectURL(img.src);
+          const canvas = document.createElement("canvas");
+          let w = img.width,
+            h = img.height;
+          w > maxWidth && (h = Math.floor(h * (maxWidth / w)), w = maxWidth), h > 2 * maxWidth && (w = Math.floor(w * (2 * maxWidth / h)),
+            h = 2 * maxWidth), canvas.width = w, canvas.height = h;
+          canvas.getContext("2d").drawImage(img, 0, 0, w, h), canvas.toBlob(blob => resolve({
+            blob: blob,
+            w: w,
+            h: h
+          }), "image/jpeg", quality);
+        }, img.onerror = () => reject(new Error("图片读取失败")), img.src = URL.createObjectURL(file);
+      });
+    }
+
+    function showToast(id, text, type = "loading") {
+      let container = document.getElementById("toast-container"),
+        el = document.getElementById(id);
+      el || (el = document.createElement("div"), el.id = id, container.appendChild(el));
+      const bg = "loading" === type ? "bg-blue-600" : "success" === type ? "bg-green-500" : "bg-red-500",
+        icon = "loading" === type ? '<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>' : "success" === type ? "✅" : "❌";
+      return el.className = `flex items-center space-x-3 px-4 py-3 rounded-xl shadow-lg text-white text-sm font-bold fade-in ${bg}`,
+        el.innerHTML = `${icon} <span>${text}</span>`, "loading" !== type && setTimeout(() => el.remove(), 3e3),
+        el;
+    }
+
+    async function authFetch(method, path, bodyBlob = null) {
+      const fullUrl = RELAY_HTTP + path,
+        event = {
+          kind: 27235,
+          created_at: Math.floor(Date.now() / 1e3),
+          tags: [
+            ["u", fullUrl],
+            ["method", method]
+          ],
+          content: "",
+          pubkey: pubKeyHex
+        };
+      event.id = nt.getEventHash(event), event.sig = nt.getSignature(event, privKeyHex);
+      const opts = {
+        method: method,
+        headers: {
+          Authorization: "Nostr " + btoa(JSON.stringify(event))
+        }
+      };
+      bodyBlob && (opts.body = bodyBlob);
+      const res = await fetch(fullUrl, opts);
+      if (!res.ok) {
+        let err = "Error";
+        try {
+          err = (await res.json()).detail;
+        } catch (e) {}
+        throw new Error(err);
+      }
+      return res;
+    }
+
+    async function handleFilesUpload(e) {
+      const files = e.target.files;
+      if (files && 0 !== files.length) {
+        document.getElementById("empty-state").classList.add("hidden");
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i],
+            toastId = "toast_" + Date.now();
+          showToast(toastId, `正在加密: ${file.name.substring(0, 10)}...`, "loading");
+          try {
+            const {
+              blob: mainBlob
+            } = await processImage(file, 1920, .85), {
+              blob: thumbBlob
+            } = await processImage(file, 400, .6), keyBytes = crypto.getRandomValues(new Uint8Array(32)), ivBytes = crypto.getRandomValues(new Uint8Array(12)), cipherMain = await encryptBlob(mainBlob, keyBytes, ivBytes), cipherThumb = await encryptBlob(thumbBlob, keyBytes, ivBytes);
+            showToast(toastId, "正在上传碎流...", "loading");
+            const [resMain, resThumb] = await Promise.all([authFetch("POST", "/api/upload", cipherMain), authFetch("POST", "/api/upload", cipherThumb)]), hashMain = (await resMain.json()).file_hash, hashThumb = (await resThumb.json()).file_hash, meta = {
+              orig: hashMain,
+              thumb: hashThumb,
+              k: bytesToBase64(keyBytes),
+              iv: bytesToBase64(ivBytes),
+              size: cipherMain.size,
+              ts: Date.now(),
+              r: 0
+            }, cipherMeta = await nt.nip04.encrypt(privKeyHex, pubKeyHex, JSON.stringify(meta)), event = {
+              kind: 30400,
+              created_at: Math.floor(Date.now() / 1e3),
+              tags: [
+                ["d", hashMain],
+                ["t", hashThumb]
+              ],
+              content: cipherMeta,
+              pubkey: pubKeyHex
+            };
+            event.id = nt.getEventHash(event), event.sig = nt.getSignature(event, privKeyHex),
+              ws && ws.readyState === WebSocket.OPEN && ws.send(JSON.stringify(["EVENT", event]));
+            const photoObj = {
+              id: event.id,
+              orig: hashMain,
+              thumb: hashThumb,
+              k: bytesToBase64(keyBytes),
+              iv: bytesToBase64(ivBytes),
+              ts: meta.ts,
+              display_ts: meta.ts,
+              blobUrl: URL.createObjectURL(thumbBlob),
+              r: 0
+            };
+            photos.unshift(photoObj), renderGallery(), showToast(toastId, "✅ 图片已安全上链！", "success");
+          } catch (err) {
+            showToast(toastId, `❌ 上传失败: ${err.message}`, "error");
+          }
+        }
+        e.target.value = "";
+      }
+    }
+
+    function formatSectionTitle(ts) {
+      const d = new Date(ts),
+        now = new Date,
+        y = d.getFullYear(),
+        m = d.getMonth() + 1,
+        day = d.getDate();
+      return y === now.getFullYear() && m === now.getMonth() + 1 && day === now.getDate() ? "今天" : y === now.getFullYear() && m === now.getMonth() + 1 ? "本月" : `${y}年 ${m}月`;
+    }
+
+    function setGalleryFilter(filterType) {
+      currentGalleryFilter = filterType;
+      ["all", "mine", "shared"].forEach(type => {
+        const btn = document.getElementById("filter-btn-" + type);
+        btn && (btn.className = type === filterType ? "text-[10px] md:text-xs font-bold px-3 py-1 rounded-md transition-all duration-200 bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm" : "text-[10px] md:text-xs font-bold px-3 py-1 rounded-md transition-all duration-200 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200");
+      }), renderGallery();
+    }
+
+    function renderGallery() {
+      const grid = document.getElementById("gallery-grid"),
+        filterValue = currentGalleryFilter,
+        displayPhotos = photos.filter(p => !hiddenInboxPhotos.has(p.id) && ((!p.isShared || !blacklistedPubkeys.has(p.owner)) && ("mine" === filterValue ? !p.isShared : "shared" !== filterValue || p.isShared)));
+      0 === displayPhotos.length ? document.getElementById("empty-state").classList.remove("hidden") : document.getElementById("empty-state").classList.add("hidden"),
+        grid.innerHTML = "";
+      const groups = {},
+        sectionOrder = [];
+      displayPhotos.forEach(p => {
+        const title = formatSectionTitle(p.display_ts);
+        groups[title] || (groups[title] = [], sectionOrder.push(title)), groups[title].push(p);
+      }), sectionOrder.forEach(title => {
+        const header = document.createElement("div");
+        header.className = "section-header fade-in", header.innerHTML = `<span>${title}</span> <span class="text-[10px] text-gray-400 font-bold tracking-widest">${groups[title].length} 张</span>`,
+          grid.appendChild(header), groups[title].forEach(p => {
+            const card = document.createElement("div");
+            card.className = "img-card group";
+            const selectMask = document.createElement("div");
+            selectMask.className = "absolute inset-0 bg-black/40 z-10 flex items-start justify-end p-2 transition-opacity pointer-events-none " + (isSelectMode ? "opacity-100" : "opacity-0");
+            const checkbox = document.createElement("div"),
+              isSelected = selectedPhotos.has(p.id);
+            if (checkbox.className = "w-5 h-5 rounded-full border-2 flex items-center justify-center " + (isSelected ? "bg-blue-500 border-blue-500" : "border-white/70"),
+              isSelected && (checkbox.innerHTML = '<svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>'),
+              selectMask.appendChild(checkbox), card.appendChild(selectMask), p.isShared) {
+              const prof = globalProfiles[p.owner] || {},
+                displayName = prof.name || prof.display_name || p.owner.substring(0, 8),
+                badge = document.createElement("div");
+              badge.className = "absolute bottom-1.5 left-1.5 w-7 h-7 cursor-pointer transition active:scale-95 z-20",
+                badge.title = `来自: ${escapeHTML(displayName)}`;
+              let cleanPic = prof.picture ? prof.picture.trim().replace(/['"\n\r]/g, "") : "";
+              cleanPic = formatAvatarUrl(cleanPic);
+              const firstChar = escapeHTML(displayName.substring(0, 1));
+              badge.innerHTML = cleanPic ? `<img src="${cleanPic}" class="w-full h-full rounded-full object-cover border-2 border-white/80 shadow-md bg-white" style="opacity: 1 !important;" onerror="this.outerHTML='<div class=\\'w-full h-full rounded-full bg-indigo-500 flex items-center justify-center text-[11px] text-white font-bold border-2 border-white/80 shadow-md\\'>${firstChar}</div>'">` : `<div class="w-full h-full rounded-full bg-indigo-500 flex items-center justify-center text-[11px] text-white font-bold border-2 border-white/80 shadow-md">${firstChar}</div>`,
+                badge.onclick = e => {
+                  e.stopPropagation(), openSenderActionModal(p.owner);
+                }, card.appendChild(badge);
+            } else if (outboundShares[p.id] && Object.keys(outboundShares[p.id]).length > 0) {
+              const shareCount = Object.keys(outboundShares[p.id]).length,
+                badge = document.createElement("div");
+              badge.className = "absolute top-1 left-1 bg-green-500/90 backdrop-blur text-white text-[10px] px-1.5 py-0.5 rounded shadow z-10 pointer-events-none flex items-center space-x-0.5",
+                badge.innerHTML = `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg> <span>${shareCount}</span>`,
+                card.appendChild(badge);
+            }
+            const imgEl = document.createElement("img");
+            p.r && (imgEl.style.transform = `rotate(${p.r}deg)`), card.appendChild(imgEl), card.onclick = e => {
+              isLongPressing || (isSelectMode ? (selectedPhotos.has(p.id) ? selectedPhotos.delete(p.id) : selectedPhotos.add(p.id),
+                document.getElementById("sel-count").innerText = selectedPhotos.size, renderGallery()) : openViewer(p));
+            }, card.oncontextmenu = e => {
+              e.preventDefault(), isSelectMode || showContextMenu(e.clientX, e.clientY, p.id);
+            }, card.addEventListener("touchstart", e => {
+              isSelectMode || (isLongPressing = !1, longPressTimer = setTimeout(() => {
+                isLongPressing = !0, showContextMenu(e.touches[0].clientX, e.touches[0].clientY, p.id);
+              }, 500));
+            }, {
+              passive: !0
+            }), card.addEventListener("touchmove", () => clearTimeout(longPressTimer), {
+              passive: !0
+            }), card.addEventListener("touchend", () => {
+              clearTimeout(longPressTimer), setTimeout(() => isLongPressing = !1, 100);
+            }), grid.appendChild(card), p.blobUrl ? (imgEl.src = p.blobUrl, imgEl.classList.add("loaded")) : fetchAndDecryptImage(p.thumb, p.k, p.iv).then(bUrl => {
+              p.blobUrl = bUrl, imgEl.src = bUrl, imgEl.classList.add("loaded");
+            }).catch(e => {
+              imgEl.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="%239ca3af"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
+                imgEl.classList.add("loaded", "p-8");
+            });
+          });
+      });
+    }
+
+    async function fetchAndDecryptImage(hash, base64Key, base64Iv) {
+      const res = await authFetch("GET", `/api/download/${hash}`),
+        cipherBlob = await res.blob(),
+        keyBytes = base64ToBytes(base64Key),
+        ivBytes = base64ToBytes(base64Iv),
+        plainBlob = await decryptBlob(cipherBlob, keyBytes, ivBytes);
+      return URL.createObjectURL(plainBlob);
+    }
+
+    document.addEventListener("click", e => {
+      const dropdown = document.getElementById("settings-dropdown");
+      !dropdown || dropdown.classList.contains("opacity-0") || e.target.closest("#settings-dropdown") || e.target.closest("#btn-settings-gear") || dropdown.classList.add("opacity-0", "scale-95", "pointer-events-none");
+    });
+
+    let imgScale = 1,
+      imgPanX = 0,
+      imgPanY = 0,
+      imgRotate = 0,
+      initialRotate = 0,
+      isDraggingImg = !1,
+      startDragX = 0,
+      startDragY = 0;
+
+    function openViewer(p) {
+      currentViewingPhotoId = p.id, imgRotate = p.r || 0, initialRotate = p.r || 0;
+      const rotateBtn = document.getElementById("btn-rotate-viewer"),
+        trackerBtn = document.getElementById("btn-tracker-viewer");
+      if (rotateBtn && (rotateBtn.style.display = p.isShared ? "none" : "block"), trackerBtn) {
+        trackerBtn.style.display = p.isShared ? "none" : "block";
+        const shares = outboundShares[p.id];
+        shares && Object.keys(shares).length > 0 ? trackerBtn.className = "text-green-400 hover:text-green-300 transition active:scale-95 p-2 bg-black/50 rounded-full shadow-[0_0_10px_rgba(74,222,128,0.4)]" : trackerBtn.className = "text-white/40 hover:text-white transition active:scale-95 p-2 bg-black/20 rounded-full";
+      }
+      const trackerPanel = document.getElementById("tracker-panel");
+      trackerPanel && trackerPanel.classList.add("translate-x-full");
+      const senderInfoEl = document.getElementById("viewer-sender-info");
+      if (senderInfoEl) {
+        const formatTime = ms => {
+          const d = new Date(ms);
+          return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0") + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+        };
+        if (p.isShared) {
+          const prof = globalProfiles[p.owner] || {},
+            displayName = prof.name || prof.display_name || p.owner.substring(0, 8),
+            picHtml = prof.picture ? `<img src="${formatAvatarUrl(prof.picture)}" class="w-7 h-7 rounded-full object-cover border border-white/20 shadow-md">` : `<div class="w-7 h-7 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-bold border border-white/20 shadow-md">${escapeHTML(displayName).substring(0, 1)}</div>`,
+            shareTimeStr = formatTime(p.display_ts),
+            origTimeStr = formatTime(p.ts);
+          senderInfoEl.innerHTML = `\n                        ${picHtml}\n                        <div class="flex flex-col leading-none space-y-1">\n                            <span class="font-bold text-white text-xs drop-shadow-md tracking-wide">来自：${escapeHTML(displayName)} <span class="text-[10px] font-normal opacity-80 ml-1.5 shadow-sm">• ${shareTimeStr} 收到分享</span></span>\n                            <span class="text-[9px] text-white/60 font-mono tracking-widest">(原图上传于 ${origTimeStr})</span>\n                        </div>\n                    `;
+        } else {
+          const uploadTimeStr = formatTime(p.ts);
+          senderInfoEl.innerHTML = `\n                        <div class="flex flex-col leading-none space-y-1">\n                            <span class="text-white text-xs font-bold drop-shadow-md tracking-wide">${uploadTimeStr} 上传</span>\n                            <span class="opacity-60 text-white text-[9px] font-mono tracking-widest uppercase">Decrypted Locally • AES-GCM</span>\n                        </div>\n                    `;
+        }
+      }
+      const modal = document.getElementById("viewer-modal"),
+        imgEl = document.getElementById("viewer-img"),
+        loader = document.getElementById("viewer-loading");
+      imgEl.src = "", imgEl.classList.replace("opacity-100", "opacity-0"), loader.classList.remove("hidden"),
+        modal.classList.remove("hidden"), modal.offsetHeight, modal.classList.replace("opacity-0", "opacity-100"),
+        fetchAndDecryptImage(p.orig, p.k, p.iv).then(bUrl => {
+          currentViewingPhotoId === p.id ? (imgEl.dataset.bUrl && URL.revokeObjectURL(imgEl.dataset.bUrl),
+            loader.classList.add("hidden"), imgEl.src = bUrl, imgEl.dataset.bUrl = bUrl, imgEl.classList.replace("opacity-0", "opacity-100"),
+            imgScale = 1, imgPanX = 0, imgPanY = 0, imgEl.style.transform = `translate(0px, 0px) scale(1) rotate(${imgRotate}deg)`) : URL.revokeObjectURL(bUrl);
+        }).catch(e => {
+          loader.innerHTML = '<div class="text-red-500 font-bold">❌ 图片加载失败</div>';
+        });
+    }
+
+    function rotateViewer() {
+      imgRotate = (imgRotate + 90) % 360;
+      const p = photos.find(x => x.id === currentViewingPhotoId);
+      p && (p.r = imgRotate);
+      document.getElementById("viewer-img").style.transform = `translate(${imgPanX}px, ${imgPanY}px) scale(${imgScale}) rotate(${imgRotate}deg)`;
+    }
+
+    async function closeViewer() {
+      const modal = document.getElementById("viewer-modal");
+      modal.classList.replace("opacity-100", "opacity-0");
+      const p = photos.find(x => x.id === currentViewingPhotoId);
+      if (p && !p.isShared && imgRotate !== initialRotate) try {
+        const evDel = {
+          kind: 5,
+          created_at: Math.floor(Date.now() / 1e3),
+          tags: [
+            ["e", p.id]
+          ],
+          content: "rotated",
+          pubkey: pubKeyHex
+        };
+        evDel.id = nt.getEventHash(evDel), evDel.sig = nt.getSignature(evDel, privKeyHex),
+          ws && ws.readyState === WebSocket.OPEN && ws.send(JSON.stringify(["EVENT", evDel]));
+        const meta = {
+            orig: p.orig,
+            thumb: p.thumb,
+            k: p.k,
+            iv: p.iv,
+            ts: p.ts,
+            r: p.r
+          },
+          cipherMeta = await nt.nip04.encrypt(privKeyHex, pubKeyHex, JSON.stringify(meta)),
+          evNew = {
+            kind: 30400,
+            created_at: Math.floor(Date.now() / 1e3),
+            tags: [
+              ["d", p.orig],
+              ["t", p.thumb]
+            ],
+            content: cipherMeta,
+            pubkey: pubKeyHex
+          };
+        evNew.id = nt.getEventHash(evNew), evNew.sig = nt.getSignature(evNew, privKeyHex),
+          ws && ws.readyState === WebSocket.OPEN && ws.send(JSON.stringify(["EVENT", evNew])),
+          p.id = evNew.id;
+      } catch (e) {
+        console.error("旋转保存失败", e);
+      }
+      renderGallery(), currentViewingPhotoId = null, setTimeout(() => {
+        modal.classList.add("hidden");
+        const imgEl = document.getElementById("viewer-img");
+        imgEl.dataset.bUrl && URL.revokeObjectURL(imgEl.dataset.bUrl), imgEl.src = "", imgEl.dataset.bUrl = "";
+      }, 300);
+    }
+
+    function downloadCurrentImage() {
+      const imgEl = document.getElementById("viewer-img");
+      if (!imgEl.src) return;
+      const a = document.createElement("a");
+      a.href = imgEl.src, a.download = `DageAlbum_${Date.now()}.jpg`, document.body.appendChild(a),
+        a.click(), document.body.removeChild(a);
+    }
+
+    const vModal = document.getElementById("viewer-modal"),
+      vImg = document.getElementById("viewer-img");
+
+    function toggleSelectMode() {
+      isSelectMode = !isSelectMode, selectedPhotos.clear(), document.getElementById("sel-count").innerText = "0";
+      const bar = document.getElementById("selection-bar"),
+        btnSel = document.getElementById("btn-select");
+      isSelectMode ? (bar.classList.remove("translate-y-24", "opacity-0", "pointer-events-none"),
+        btnSel.classList.replace("bg-gray-100", "bg-blue-100"), btnSel.classList.replace("text-gray-700", "text-blue-600"),
+        btnSel.innerText = "取消") : (bar.classList.add("translate-y-24", "opacity-0", "pointer-events-none"),
+        btnSel.classList.replace("bg-blue-100", "bg-gray-100"), btnSel.classList.replace("text-blue-600", "text-gray-700"),
+        btnSel.innerText = "多选"), renderGallery();
+    }
+
+    async function deleteSelected() {
+      if (0 === selectedPhotos.size) return;
+      if (!await uiConfirm("删除多张图片", "删除您上传的照片将【物理粉碎】远端硬盘文件；\n删除好友共享的照片仅作【移出收件箱】处理。\n确认执行吗？", "确定删除", !0)) return;
+      const toastId = "toast_del_" + Date.now();
+      showToast(toastId, "执行清理...", "loading");
+      let hardCount = 0,
+        softCount = 0;
+      const idsToDelete = Array.from(selectedPhotos);
+      for (let id of idsToDelete) {
+        const p = photos.find(x => x.id === id);
+        if (p) try {
+          if (p.isShared) softCount++;
+          else {
+            try {
+              await authFetch("DELETE", `/api/file/${p.orig}`);
+            } catch (e) {}
+            try {
+              await authFetch("DELETE", `/api/file/${p.thumb}`);
+            } catch (e) {}
+            hardCount++;
+          }
+          const ev = {
+            kind: 5,
+            created_at: Math.floor(Date.now() / 1e3),
+            tags: [
+              ["e", p.id]
+            ],
+            content: "Delete",
+            pubkey: pubKeyHex
+          };
+          ev.id = nt.getEventHash(ev), ev.sig = nt.getSignature(ev, privKeyHex), ws && ws.readyState === WebSocket.OPEN && ws.send(JSON.stringify(["EVENT", ev])),
+            p.blobUrl && URL.revokeObjectURL(p.blobUrl), hiddenInboxPhotos.add(id), photos = photos.filter(x => x.id !== id);
+        } catch (e) {
+          console.error("删除中断:", e);
+        }
+      }
+      let msg = "✅ 清理完成！";
+      hardCount > 0 && softCount > 0 ? msg = `✅ 粉碎 ${hardCount} 张原图，移出收件箱 ${softCount} 张。` : hardCount > 0 ? msg = `✅ 成功物理粉碎 ${hardCount} 张照片！` : softCount > 0 && (msg = `✅ 成功从收件箱移除 ${softCount} 张照片！`),
+        showToast(toastId, msg, "success"), toggleSelectMode(), renderGallery();
+    }
+
+    function toggleTrackerPanel() {
+      const panel = document.getElementById("tracker-panel");
+      panel.classList.contains("translate-x-full") ? (panel.classList.remove("translate-x-full"),
+        renderTrackerList()) : panel.classList.add("translate-x-full");
+    }
+
+    function renderTrackerList() {
+      const listEl = document.getElementById("tracker-list");
+      listEl.innerHTML = "";
+      const shares = outboundShares[currentViewingPhotoId];
+      shares && 0 !== Object.keys(shares).length ? Object.keys(shares).forEach(targetPubkey => {
+        const eventId = shares[targetPubkey],
+          prof = globalProfiles[targetPubkey] || {},
+          displayName = prof.name || prof.display_name || targetPubkey.substring(0, 8),
+          picHtml = prof.picture ? `<img src="${formatAvatarUrl(prof.picture)}" class="w-8 h-8 rounded-full object-cover border border-gray-200">` : `<div class="w-8 h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-xs shrink-0">${escapeHTML(displayName).substring(0, 1)}</div>`,
+          div = document.createElement("div");
+        div.className = "flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700",
+          div.innerHTML = `\n                            ${picHtml}\n                            <div class="flex-1 min-w-0">\n                                <div class="text-sm font-bold truncate">${escapeHTML(displayName)}</div>\n                                <div class="text-[10px] text-green-500 font-bold truncate">已授权可看</div>\n                            </div>\n                            <button onclick="revokeShare('${currentViewingPhotoId}', '${targetPubkey}', '${eventId}')" class="text-xs bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 px-3 py-1.5 rounded-lg font-bold hover:bg-red-200 transition active:scale-95">撤回</button>\n                        `,
+          listEl.appendChild(div);
+      }) : listEl.innerHTML = '<div class="text-center text-xs text-gray-400 py-10">安全的私人保险箱。<br>这张照片未分享给任何人。</div>';
+    }
+
+    async function revokeShare(photoId, targetPubkey, eventId) {
+      if (await uiConfirm("权限撤回", "确定执行【权限撤回】？\n\n您将发送一把数字粉碎锁，对方收件箱里的该照片会瞬间失效且被物理抹除。", "强制撤回", !0)) try {
+        const evDel = {
+          kind: 5,
+          created_at: Math.floor(Date.now() / 1e3),
+          tags: [
+            ["e", eventId]
+          ],
+          content: "Revoke Security",
+          pubkey: pubKeyHex
+        };
+        if (evDel.id = nt.getEventHash(evDel), evDel.sig = nt.getSignature(evDel, privKeyHex),
+          ws && ws.readyState === WebSocket.OPEN && ws.send(JSON.stringify(["EVENT", evDel])),
+          outboundShares[photoId]) {
+          delete outboundShares[photoId][targetPubkey];
+          const trackerBtn = document.getElementById("btn-tracker-viewer");
+          0 === Object.keys(outboundShares[photoId]).length && trackerBtn && (trackerBtn.className = "text-white/40 hover:text-white transition active:scale-95 p-2 bg-black/20 rounded-full");
+        }
+        renderTrackerList(), renderGallery(), showToast("toast_revoke", "✅ 物理级撤回！已成功切断对方的解密源。", "success");
+      } catch (e) {
+        alert("撤回遇到网络异常");
+      }
+    }
+
+    function showContextMenu(clientX, clientY, photoId) {
+      contextMenuPhotoId = photoId;
+      const menu = document.getElementById("photo-context-menu");
+      menu.classList.remove("hidden");
+      let x = clientX,
+        y = clientY;
+      const rect = menu.getBoundingClientRect();
+      x + rect.width > window.innerWidth && (x = window.innerWidth - rect.width - 10),
+        y + rect.height > window.innerHeight && (y = window.innerHeight - rect.height - 10),
+        menu.style.left = `${x}px`, menu.style.top = `${y}px`, requestAnimationFrame(() => {
+          menu.classList.remove("scale-95", "opacity-0", "pointer-events-none"), menu.classList.add("scale-100", "opacity-100");
+        });
+    }
+
+    function hideContextMenu() {
+      const menu = document.getElementById("photo-context-menu");
+      menu.classList.contains("hidden") || (menu.classList.remove("scale-100", "opacity-100"),
+        menu.classList.add("scale-95", "opacity-0", "pointer-events-none"), setTimeout(() => menu.classList.add("hidden"), 100),
+        contextMenuPhotoId = null);
+    }
+
+    function contextMenuEnableMultiSelect() {
+      const targetId = contextMenuPhotoId;
+      hideContextMenu(), isSelectMode || toggleSelectMode(), selectedPhotos.add(targetId),
+        document.getElementById("sel-count").innerText = selectedPhotos.size, renderGallery();
+    }
+
+    function contextMenuShare() {
+      const targetId = contextMenuPhotoId;
+      hideContextMenu();
+      const p = photos.find(x => x.id === targetId);
+      if (p && p.isShared) return uiAlert("权限限制", "为保护隐私，您不能转发他人共享给您的私人照片！", "error");
+      shareTargetMode = "context", singleSharePhotoId = targetId, p.blobUrl ? (document.getElementById("share-single-img").src = p.blobUrl,
+          document.getElementById("share-single-preview").classList.remove("hidden")) : document.getElementById("share-single-preview").classList.add("hidden"),
+        document.getElementById("share-target-npub").value = "", renderShareContacts(),
+        document.getElementById("share-modal").classList.remove("hidden");
+    }
+
+    async function contextMenuDelete() {
+      const targetId = contextMenuPhotoId;
+      hideContextMenu();
+      const p = photos.find(x => x.id === targetId);
+      if (!p) return;
+      const actionText = p.isShared ? "移出收件箱" : "物理粉碎远端文件";
+      if (!await uiConfirm("删除单张照片", `确认执行删除操作吗？\n当前照片将被执行【${actionText}】处理。`, "确定删除", !0)) return;
+      const toastId = "toast_del_ctx_" + Date.now();
+      showToast(toastId, "执行清理...", "loading");
+      try {
+        if (!p.isShared) {
+          try {
+            await authFetch("DELETE", `/api/file/${p.orig}`);
+          } catch (e) {}
+          try {
+            await authFetch("DELETE", `/api/file/${p.thumb}`);
+          } catch (e) {}
+        }
+        const ev = {
+          kind: 5,
+          created_at: Math.floor(Date.now() / 1e3),
+          tags: [
+            ["e", p.id]
+          ],
+          content: "Delete",
+          pubkey: pubKeyHex
+        };
+        ev.id = nt.getEventHash(ev), ev.sig = nt.getSignature(ev, privKeyHex), ws && ws.readyState === WebSocket.OPEN && ws.send(JSON.stringify(["EVENT", ev])),
+          p.blobUrl && URL.revokeObjectURL(p.blobUrl), hiddenInboxPhotos.add(p.id), photos = photos.filter(x => x.id !== p.id),
+          showToast(toastId, "✅ 成功处理该照片", "success"), renderGallery();
+      } catch (e) {
+        showToast(toastId, "❌ 删除遇到网络异常", "error");
+      }
+    }
+
+    vModal.addEventListener("wheel", e => {
+        vModal.classList.contains("hidden") || (e.preventDefault(), imgScale += e.deltaY < 0 ? .1 : -.1,
+          imgScale = Math.max(.5, Math.min(imgScale, 5)), vImg.style.transform = `translate(${imgPanX}px, ${imgPanY}px) scale(${imgScale}) rotate(${imgRotate}deg)`);
+      }, {
+        passive: !1
+      }), vModal.addEventListener("mousedown", e => {
+        e.target === vImg && (isDraggingImg = !0, startDragX = e.clientX - imgPanX, startDragY = e.clientY - imgPanY);
+      }), vModal.addEventListener("mousemove", e => {
+        isDraggingImg && (imgPanX = e.clientX - startDragX, imgPanY = e.clientY - startDragY,
+          vImg.style.transform = `translate(${imgPanX}px, ${imgPanY}px) scale(${imgScale}) rotate(${imgRotate}deg)`);
+      }), vModal.addEventListener("mouseup", () => isDraggingImg = !1), vModal.addEventListener("mouseleave", () => isDraggingImg = !1),
+      document.addEventListener("click", e => {
+        e.target.closest("#photo-context-menu") || hideContextMenu();
+      }), window.addEventListener("scroll", hideContextMenu, {
+        passive: !0
+      }), document.getElementById("gallery-container").addEventListener("scroll", hideContextMenu, {
+        passive: !0
+      });
+  </script>
+</body>
+
+</html>
