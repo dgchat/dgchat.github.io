@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>DGCHAT V0.1.115 单文件版</title>
+  <title>DGCHAT V0.1.120 单文件版</title>
   <style id="dgchat-bundled-tailwind">
 /*! tailwindcss v4.1.10 | MIT License | https://tailwindcss.com */
 @layer properties;
@@ -11157,6 +11157,32 @@ html.dark #nbtc-trust-cert { color: #ffd27a; }
   }
 </style>
 
+<style id="dgchat-lightning-modal-layer-fix-v0120">
+  /* Explicit layer: the bundled Tailwind CSS does not generate z-[180]/bg-black/60. */
+  #lightning-wallet-modal {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 2147483000 !important;
+    padding: 16px !important;
+    pointer-events: auto !important;
+  }
+  #lightning-wallet-modal.hidden { display: none !important; }
+  #lightning-wallet-modal:not(.hidden) {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(0, 0, 0, .68) !important;
+    visibility: visible !important;
+  }
+  #lightning-wallet-modal > div {
+    position: relative;
+    z-index: 1;
+    max-height: 92vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+</style>
+
 </head>
 
 <body class="bg-gray-100 dark:bg-gray-950 h-screen-dvh w-screen overflow-hidden flex items-center justify-center font-sans relative">
@@ -11221,7 +11247,7 @@ html.dark #nbtc-trust-cert { color: #ffd27a; }
     </div>
 
     <div class="w-full max-w-sm mx-auto mt-5 text-center text-[11px] font-mono tracking-wider text-gray-400 dark:text-gray-500 select-none">
-      DGChat v0.1.119
+      DGChat v0.1.120
     </div>
   </div>
 
@@ -11339,7 +11365,7 @@ html.dark #nbtc-trust-cert { color: #ffd27a; }
         </div>
         <h3 class="text-xl font-bold text-gray-700 dark:text-gray-200 tracking-wide">DGCHAT 去中心化安全协议端</h3>
         <p class="text-sm mt-3 text-gray-400 max-w-md text-center leading-relaxed">
-          基于 Nostr 协议构建，全场景加密通讯，无中心化服务器<br>密钥即身份，通讯主权，自由导出<br><a href="https://github.com/dgchat/dgchat.github.io" target="_blank" rel="noopener noreferrer">https://github.com/dgchat/dgchat.github.io</a><br><span class="inline-block mt-1 text-xs font-mono tracking-wider text-gray-400">DGChat v0.1.119</span>
+          基于 Nostr 协议构建，全场景加密通讯，无中心化服务器<br>密钥即身份，通讯主权，自由导出<br><a href="https://github.com/dgchat/dgchat.github.io" target="_blank" rel="noopener noreferrer">https://github.com/dgchat/dgchat.github.io</a><br><span class="inline-block mt-1 text-xs font-mono tracking-wider text-gray-400">DGChat v0.1.120</span>
         </p>
         <div class="mt-8 flex space-x-4">
           <span class="px-3 py-1 bg-gray-100 dark:bg-gray-950 text-gray-500 dark:text-gray-400 text-xs rounded-full font-medium">NIP-04/59</span>
@@ -19068,7 +19094,7 @@ globalThis.NextTx=NextTx;
 })();
 </script>
 
-  <div id="lightning-wallet-modal" class="fixed inset-0 bg-black/60 hidden z-[180] p-4 flex items-center justify-center">
+  <div id="lightning-wallet-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-label="闪电网络钱包管理" class="fixed inset-0 bg-black/60 hidden z-[180] p-4 flex items-center justify-center">
     <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] overflow-y-auto">
       <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between sticky top-0 bg-white dark:bg-gray-900 z-10">
         <div><h3 class="text-base font-bold text-gray-800 dark:text-gray-100">闪电网络钱包</h3><p class="text-[10px] text-gray-400 mt-0.5">独立于 NBTC 钱包</p></div>
@@ -19394,21 +19420,44 @@ globalThis.NextTx=NextTx;
     const modal = $("lightning-wallet-modal");
     if (!modal) {
       notify("闪电钱包管理界面未加载，请刷新页面后重试。", "error");
-      return;
+      return Promise.resolve(false);
     }
+
     const wasHidden = modal.classList.contains("hidden");
     modal.classList.remove("hidden");
-    if (wasHidden && typeof ModalManager !== "undefined" && ModalManager.push) {
-      ModalManager.push("lightningWallet", closeManager);
+    modal.setAttribute("aria-hidden", "false");
+
+    // History integration is optional. A blocked pushState must not stop the dialog.
+    if (wasHidden && typeof ModalManager !== "undefined" && ModalManager && ModalManager.push) {
+      try {
+        ModalManager.push("lightningWallet", closeManager);
+      } catch (historyError) {
+        if (Array.isArray(ModalManager.stack) && ModalManager.stack.length &&
+            ModalManager.stack[ModalManager.stack.length - 1].id === "lightningWallet") {
+          ModalManager.stack.pop();
+        }
+        console.warn("[Lightning] Modal history integration unavailable; dialog remains open.", historyError);
+      }
     }
+
     if (managerLoadPromise) return managerLoadPromise;
-    managerLoadPromise = ensureLoaded().then(() => {
+    setManagerStatus("正在读取钱包状态…", "info");
+    managerLoadPromise = Promise.resolve().then(() => ensureLoaded()).then(() => {
       renderManager();
       const relayInput = $("lightning-connect-relay");
-      if (relayInput) relayInput.value = localStorage.getItem("dage_ln_nwc_relay_" + pubKeyHex) || relayInput.value || DEFAULT_RELAY;
+      if (relayInput) {
+        try {
+          relayInput.value = localStorage.getItem("dage_ln_nwc_relay_" + pubKeyHex) || relayInput.value || DEFAULT_RELAY;
+        } catch (_) {
+          relayInput.value = relayInput.value || DEFAULT_RELAY;
+        }
+      }
+      return true;
     }).catch(e => {
-      setManagerStatus(e.message || String(e), "error");
-      notify(e.message || String(e), "error");
+      const message = e && e.message ? e.message : String(e);
+      setManagerStatus(message, "error");
+      notify(message, "error");
+      return false;
     }).finally(() => {
       managerLoadPromise = null;
     });
@@ -19418,8 +19467,17 @@ globalThis.NextTx=NextTx;
   function closeManager(fromPopState = false) {
     closePairing();
     const modal = $("lightning-wallet-modal");
-    if (modal) modal.classList.add("hidden");
-    if (!fromPopState && typeof ModalManager !== "undefined" && ModalManager.pop) ModalManager.pop("lightningWallet");
+    if (modal) {
+      modal.classList.add("hidden");
+      modal.setAttribute("aria-hidden", "true");
+    }
+    if (!fromPopState && typeof ModalManager !== "undefined" && ModalManager && ModalManager.pop) {
+      try {
+        ModalManager.pop("lightningWallet");
+      } catch (historyError) {
+        console.warn("[Lightning] Modal history cleanup unavailable.", historyError);
+      }
+    }
   }
 
   async function copyPairingUri() {
