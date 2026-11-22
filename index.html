@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>DGCHAT V0.1.113 单文件版</title>
+  <title>DGCHAT V0.1.115 单文件版</title>
   <style id="dgchat-bundled-tailwind">
 /*! tailwindcss v4.1.10 | MIT License | https://tailwindcss.com */
 @layer properties;
@@ -11119,7 +11119,6 @@ html.dark #nbtc-trust-cert { color: #ffd27a; }
   <div id="login-screen" class="w-full h-full md:h-auto md:max-w-md bg-white dark:bg-gray-900 md:rounded-xl shadow-lg p-6 md:p-8 flex flex-col justify-center hidden z-50">
     <div class="max-w-sm w-full mx-auto" id="account-list-area">
       <h2 class="text-3xl font-bold text-center text-gray-800 dark:text-gray-100 mb-1">DGCHAT 🔐</h2>
-      <div class="text-center text-xs text-blue-500 font-mono mb-6 font-bold tracking-widest">v0.1.113</div>
       <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 text-center">选择账号登录</p>
 
       <div id="saved-accounts-list" class="space-y-3 mb-6 max-h-60 overflow-y-auto no-scrollbar">
@@ -11173,6 +11172,10 @@ html.dark #nbtc-trust-cert { color: #ffd27a; }
         </div>
         <button onclick="openCreateAccountModal()" class="w-full bg-green-500 text-white py-3 px-4 rounded-lg hover:bg-green-600 transition shadow-md font-medium active:scale-95">生成全新账号</button>
       </div>
+    </div>
+
+    <div class="w-full max-w-sm mx-auto mt-5 text-center text-[11px] font-mono tracking-wider text-gray-400 dark:text-gray-500 select-none">
+      DGChat v0.1.118
     </div>
   </div>
 
@@ -11290,7 +11293,7 @@ html.dark #nbtc-trust-cert { color: #ffd27a; }
         </div>
         <h3 class="text-xl font-bold text-gray-700 dark:text-gray-200 tracking-wide">DGCHAT 去中心化安全协议端</h3>
         <p class="text-sm mt-3 text-gray-400 max-w-md text-center leading-relaxed">
-          基于 Nostr 协议构建，全场景加密通讯，无中心化服务器<br>密钥即身份，通讯主权，自由导出<br><a href="https://github.com/btcdage2011/DageChat" target="_blank">https://github.com/btcdage2011/DageChat</a>
+          基于 Nostr 协议构建，全场景加密通讯，无中心化服务器<br>密钥即身份，通讯主权，自由导出<br><a href="https://github.com/dgchat/dgchat.github.io" target="_blank" rel="noopener noreferrer">https://github.com/dgchat/dgchat.github.io</a><br><span class="inline-block mt-1 text-xs font-mono tracking-wider text-gray-400">DGChat v0.1.118</span>
         </p>
         <div class="mt-8 flex space-x-4">
           <span class="px-3 py-1 bg-gray-100 dark:bg-gray-950 text-gray-500 dark:text-gray-400 text-xs rounded-full font-medium">NIP-04/59</span>
@@ -11349,7 +11352,8 @@ html.dark #nbtc-trust-cert { color: #ffd27a; }
           <input type="file" id="camera-upload" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelect(event)">
 
           <button id="nbtc-chat-button" type="button" onclick="return window.dgchatNbtcOpenClick(event)" aria-label="打开 NBTC 钱包与转账" title="NextBTC 转账与往来记录" class="hidden relative z-20 pointer-events-auto cursor-pointer shrink-0 mb-0.5 px-2 py-2 text-[10px] font-bold tracking-wide text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition">NBTC</button>
-          <textarea id="msg-input" rows="1" placeholder="输入消息..." class="dark:bg-gray-800 dark:text-white dark:border-gray-600 flex-1 border border-gray-300 dark:border-gray-600 rounded-xl py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm resize-none text-base max-h-32 no-scrollbar" oninput="handleChatInput(this)" onkeypress="handleEnter(event)"></textarea>
+          <button id="lightning-chat-button" type="button" onclick="window.openLightningPayment(currentChatPk)" aria-label="闪电网络转账" title="闪电网络转账" class="hidden relative z-20 pointer-events-auto cursor-pointer shrink-0 mb-0.5 px-2 py-2 text-base text-amber-500 hover:text-amber-600 rounded-lg border border-transparent hover:border-amber-200 dark:hover:border-amber-900 transition">⚡</button>
+          <textarea id="msg-input" rows="1" placeholder="输入消息..." class="dark:bg-gray-800 dark:text-white dark:border-gray-600 flex-1 border border-gray-300 dark:border-gray-600 rounded-xl py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm resize-none text-base max-h-32 no-scrollbar" oninput="handleChatInput(this)" onkeydown="handleEnter(event)"></textarea>
           <button onclick="sendMessage()" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 shadow-sm font-medium active:scale-95 h-[46px]">发送</button>
         </div>
       </div>
@@ -11418,8 +11422,9 @@ html.dark #nbtc-trust-cert { color: #ffd27a; }
             <span class="text-[10px] nbtc-profile-address-network">NextBTC</span>
           </div>
           <div id="peer-modal-nbtc-address" class="text-xs nbtc-profile-address-value font-mono break-all select-all leading-relaxed"></div>
-          <div class="flex justify-end mt-2">
+          <div class="flex flex-wrap justify-end gap-2 mt-2">
             <button type="button" onclick="copyPeerNbtcAddress()" class="px-3 py-1.5 rounded-lg nbtc-profile-address-copy text-xs border">复制地址</button>
+            <button id="peer-modal-nbtc-send-button" type="button" onclick="openPeerNbtcTransfer(peerPkToViewGlobal)" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm active:scale-95 transition">给 TA 转账</button>
           </div>
         </div>
 
@@ -11437,6 +11442,9 @@ html.dark #nbtc-trust-cert { color: #ffd27a; }
             <div class="flex items-center bg-yellow-50 p-2 rounded border border-yellow-100">
               <span class="text-yellow-600 mr-2 text-sm">⚡</span>
               <div id="peer-modal-ln" class="text-gray-700 dark:text-gray-200 text-xs break-all font-mono flex-1 line-clamp-2"></div>
+            </div>
+            <div class="flex justify-end mt-2">
+              <button type="button" onclick="window.openPeerProfileLightningPayment()" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold">⚡ 闪电转账</button>
             </div>
           </div>
           <div id="peer-modal-relays-container" class="hidden">
@@ -11782,6 +11790,13 @@ html.dark #nbtc-trust-cert { color: #ffd27a; }
           <div>
             <label class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">公开展示的 Relay 列表</label>
             <textarea id="edit-relays-display" rows="2" class="dark:bg-gray-800 dark:text-white dark:border-gray-600 w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none resize-none" placeholder="wss://relay.damus.io, wss://..."></textarea>
+          </div>
+          <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-3 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-xs font-semibold text-gray-700 dark:text-gray-200">闪电网络钱包</div>
+              <div class="text-[10px] text-gray-400 mt-0.5">独立连接，可在私聊中向好友付款</div>
+            </div>
+            <button type="button" onclick="window.openLightningWalletManager()" class="shrink-0 px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-semibold">管理钱包</button>
           </div>
         </div>
 
@@ -15612,6 +15627,7 @@ globalThis.NextTx=NextTx;
         renderContacts(), window.innerWidth >= 768 && (document.getElementById("welcome-area").style.display = "",
           document.getElementById("welcome-area").classList.remove("hidden")), document.getElementById("chat-header").classList.add("hidden"),
         document.getElementById("message-list").classList.add("hidden"), document.getElementById("chat-input-area").classList.add("hidden"),
+        window.dgchatLightningUpdateChatButton && window.dgchatLightningUpdateChatButton(),
         fromPopState || ModalManager.pop("chatPanel");
     }
 
@@ -15637,6 +15653,7 @@ globalThis.NextTx=NextTx;
       } else picUrl ? (avatarBox.innerHTML = `<img src="${picUrl}" class="w-full h-full object-cover">`,
         avatarBox.classList.replace("bg-gray-400", "bg-transparent")) : (avatarBox.innerText = prof.name ? String(prof.name).substring(0, 1) : "?",
         avatarBox.classList.replace("bg-transparent", "bg-gray-400"));
+      if (window.dgchatLightningUpdateChatButton) window.dgchatLightningUpdateChatButton();
     }
 
     let globalTargetMsgIdToHighlight = null;
@@ -16051,8 +16068,13 @@ globalThis.NextTx=NextTx;
     }
 
     function handleEnter(e) {
-      "Enter" === e.key && !e.shiftKey && window.innerWidth >= 768 && (e.preventDefault(),
-        sendMessage());
+      if (!e || "Enter" !== e.key || window.innerWidth < 768) return;
+      // Preserve Chinese/Japanese IME candidate confirmation; do not send mid-composition.
+      if (e.isComposing || 229 === e.keyCode) return;
+      // Ctrl+Enter inserts a newline. Plain Enter sends the message.
+      if (e.ctrlKey) return;
+      e.preventDefault();
+      sendMessage();
     }
 
     function handleChatInput(el) {
@@ -16127,6 +16149,8 @@ globalThis.NextTx=NextTx;
           nbtcProfileBox.classList.add("hidden");
           if (nbtcProfileText) nbtcProfileText.textContent = "";
         }
+        const nbtcProfileSendButton = document.getElementById("peer-modal-nbtc-send-button");
+        if (nbtcProfileSendButton) nbtcProfileSendButton.classList.toggle("hidden", targetPk === pubKeyHex);
         let badge = document.getElementById("peer-modal-badge"),
           actionArea = document.getElementById("peer-action-btn-area");
           if (isGroup) {
@@ -16193,6 +16217,19 @@ globalThis.NextTx=NextTx;
       if (!value) return;
       copyText(value);
       nbtcToast("NBTC 收款地址已复制", "success");
+    }
+    function openPeerNbtcTransfer(peerPk = peerPkToViewGlobal) {
+      if (!peerPk || peerPk === pubKeyHex || groups[peerPk]) return nbtcToast("当前对象不支持 NBTC 转账", "info");
+      const address = nbtcPeerAddressFor(peerPk) || nbtcProfileAddressCandidate(profiles[peerPk]);
+      if (!address) {
+        nbtcToast("暂时没有对方的 NBTC 收款地址", "info");
+        requestNbtcPeerProfile(peerPk, true);
+        return;
+      }
+      // Open the existing NBTC send form directly, prefilled with this contact's address.
+      // Keep the peer-history view out of this shortcut; payment flow remains unchanged.
+      closePeerProfileModal();
+      openNbtcSendModal(peerPk);
     }
     function closePeerProfileModal(fromPopState = !1) {
       peerPkToViewGlobal = null, document.getElementById("peer-profile-content").classList.add("scale-95"),
@@ -18983,6 +19020,954 @@ globalThis.NextTx=NextTx;
   if (button) button.dataset.nbtcClickBridge = "ready";
   else console.warn("[NBTC] chat entry button was not found when click bridge initialized.");
 })();
+</script>
+
+  <div id="lightning-wallet-modal" class="fixed inset-0 bg-black/60 hidden z-[180] p-4 flex items-center justify-center">
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] overflow-y-auto">
+      <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between sticky top-0 bg-white dark:bg-gray-900 z-10">
+        <div><h3 class="text-base font-bold text-gray-800 dark:text-gray-100">闪电网络钱包</h3><p class="text-[10px] text-gray-400 mt-0.5">独立于 NBTC 钱包</p></div>
+        <button type="button" onclick="window.closeLightningWalletManager()" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl leading-none">×</button>
+      </div>
+      <div class="p-4 space-y-4">
+        <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-3 space-y-2">
+          <div class="flex justify-between items-center"><span class="text-xs text-gray-500 dark:text-gray-400">连接状态</span><strong id="lightning-wallet-connected" class="text-xs text-gray-500">尚未连接</strong></div>
+          <div id="lightning-wallet-connect-box" class="space-y-3">
+            <p class="text-xs text-gray-500 dark:text-gray-400">连接一次兼容的闪电钱包，即可在 DGChat 私聊中付款。钱包会在自己的应用中确认授权。</p>
+            <button type="button" onclick="window.startLightningWalletPairing()" class="w-full py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold">连接闪电钱包</button>
+            <p class="text-[10px] text-gray-400">使用手机钱包扫描并确认授权。请在钱包授权页确认付款权限，并按需设置支出限额。</p>
+            <div id="lightning-pairing-box" class="hidden rounded-xl bg-gray-50 dark:bg-gray-800 p-3 space-y-2">
+              <div id="lightning-pairing-qr" class="mx-auto w-fit bg-white p-2 rounded-lg"></div>
+              <p class="text-[11px] text-center text-gray-600 dark:text-gray-300">使用支持快速连接的闪电钱包扫描，并在钱包中确认授权</p>
+              <p class="text-[10px] text-center text-gray-400">部分钱包暂不支持此方式，可使用下方手动连接。</p>
+              <div class="flex gap-2">
+                <button type="button" onclick="window.copyLightningWalletAuthUri()" class="flex-1 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-xs text-gray-600 dark:text-gray-300">复制连接链接</button>
+                <button type="button" onclick="window.cancelLightningWalletPairing()" class="flex-1 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-xs text-gray-600 dark:text-gray-300">取消连接</button>
+              </div>
+            </div>
+            <details class="text-xs">
+              <summary class="cursor-pointer text-gray-500 dark:text-gray-400">高级设置 / 手动连接</summary>
+              <div class="mt-2 space-y-2">
+                <div class="space-y-1">
+                  <label for="lightning-connect-relay" class="text-[11px] text-gray-500 dark:text-gray-400">钱包连接节点</label>
+                  <input id="lightning-connect-relay" type="url" value="wss://relay.getalby.com/v1" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-2 text-xs font-mono text-gray-700 dark:text-gray-200" autocomplete="off" spellcheck="false">
+                  <p class="text-[10px] text-gray-400">仅用于钱包通信，不会更改 DGChat 的聊天 Relay。</p>
+                </div>
+                <input id="lightning-nwc-uri" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴钱包提供的连接码" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-2 text-xs font-mono text-gray-700 dark:text-gray-200">
+                <button type="button" onclick="window.importLightningWalletConnection()" class="w-full py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-200">验证并连接</button>
+              </div>
+            </details>
+          </div>
+          <div id="lightning-wallet-connected-box" class="hidden space-y-2">
+            <div class="text-sm font-semibold text-gray-800 dark:text-gray-100" id="lightning-wallet-alias">已连接的钱包</div>
+            <div class="flex justify-between text-xs"><span class="text-gray-500">网络</span><span id="lightning-wallet-network" class="text-gray-700 dark:text-gray-200">mainnet</span></div>
+            <div class="flex justify-between text-xs"><span class="text-gray-500">可用操作</span><span id="lightning-wallet-methods" class="text-right text-gray-700 dark:text-gray-200"></span></div>
+            <div class="flex justify-between items-center pt-2 border-t border-gray-100 dark:border-gray-700"><span class="text-xs text-gray-500">钱包余额</span><strong id="lightning-wallet-balance" class="text-sm tabular-nums text-gray-800 dark:text-gray-100">点击刷新</strong></div>
+            <div class="flex gap-2">
+              <button type="button" onclick="window.refreshLightningWalletBalance()" class="flex-1 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-200">刷新余额</button>
+              <button id="lightning-wallet-disconnect" type="button" onclick="window.disconnectLightningWallet()" class="py-2 px-3 rounded-lg border border-red-200 dark:border-red-900 text-xs text-red-600 dark:text-red-400">断开</button>
+            </div>
+          </div>
+          <div id="lightning-wallet-status" class="mt-2 text-xs text-gray-500 dark:text-gray-400" role="status"></div>
+        </div>
+        <div class="space-y-2">
+          <div class="text-xs font-semibold text-gray-700 dark:text-gray-200">本机付款记录</div>
+          <div id="lightning-wallet-history" class="rounded-lg border border-gray-100 dark:border-gray-800 px-3"></div>
+          <p class="text-[10px] text-gray-400">只记录由 DGChat 发起的付款，保存在当前设备的加密本地数据中，不发布到聊天 Relay。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="lightning-send-modal" class="fixed inset-0 bg-black/60 hidden z-[190] p-4 flex items-center justify-center">
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm max-h-[92vh] overflow-y-auto">
+      <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+        <div><h3 class="text-base font-bold text-gray-800 dark:text-gray-100">⚡ 闪电转账</h3><p class="text-[10px] text-gray-400 mt-0.5">Bitcoin Lightning Network</p></div>
+        <button type="button" onclick="window.closeLightningPayment()" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl leading-none">×</button>
+      </div>
+      <div class="p-4 space-y-3">
+        <div class="rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900 p-3">
+          <div class="text-[10px] text-amber-700 dark:text-amber-300">收款对象</div>
+          <div id="lightning-send-peer-name" class="text-sm font-semibold text-gray-800 dark:text-gray-100 mt-0.5"></div>
+          <div class="flex items-start gap-2 mt-1">
+            <div id="lightning-send-address" class="text-[11px] font-mono break-all text-gray-600 dark:text-gray-300 flex-1 min-w-0"></div>
+            <button type="button" onclick="window.copyLightningRecipientAddress()" class="shrink-0 text-[10px] text-amber-700 dark:text-amber-300">复制</button>
+          </div>
+          <div class="text-[10px] text-gray-400 mt-1">服务域名：<span id="lightning-send-domain"></span></div>
+        </div>
+        <div id="lightning-send-connect-needed" class="hidden rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/20 p-3 space-y-2">
+          <p class="text-xs text-blue-700 dark:text-blue-300">尚未连接闪电钱包。连接后即可完成付款。</p>
+          <button type="button" onclick="window.connectLightningFromPayment()" class="w-full py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold">连接闪电钱包</button>
+        </div>
+        <div id="lightning-send-form" class="space-y-3">
+          <div>
+            <label for="lightning-send-amount" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">转账金额（sats）</label>
+            <input id="lightning-send-amount" type="number" min="1" step="1" inputmode="numeric" placeholder="例如 1000" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 text-sm text-gray-800 dark:text-gray-100">
+          </div>
+          <div>
+            <label for="lightning-send-comment" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">备注（可选）</label>
+            <input id="lightning-send-comment" type="text" maxlength="200" placeholder="给对方留句话" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-2.5 text-sm text-gray-800 dark:text-gray-100">
+          </div>
+          <button id="lightning-send-submit" type="button" onclick="window.prepareLightningPayment()" class="w-full py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold">获取付款请求</button>
+        </div>
+        <div id="lightning-send-preview" class="hidden rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20 p-3 space-y-2">
+          <div class="text-xs font-bold text-amber-800 dark:text-amber-300">请核对付款信息</div>
+          <div class="text-[11px] text-gray-600 dark:text-gray-300 break-all">收款地址：<span id="lightning-send-preview-address" class="font-mono"></span></div>
+          <div class="flex justify-between text-xs"><span class="text-gray-500">付款金额</span><strong id="lightning-send-preview-amount" class="text-gray-800 dark:text-gray-100"></strong></div>
+          <div class="flex justify-between text-xs"><span class="text-gray-500">付款请求有效期至</span><strong id="lightning-send-preview-expiry" class="text-gray-800 dark:text-gray-100"></strong></div>
+          <div class="text-[11px] text-gray-600 dark:text-gray-300 break-words">付款说明：<span id="lightning-send-preview-description"></span></div>
+          <p class="text-[10px] text-gray-500 dark:text-gray-400">手续费由你的闪电钱包最终确定。确认后请勿重复提交。</p>
+          <div class="flex gap-2">
+            <button type="button" onclick="document.getElementById('lightning-send-preview').classList.add('hidden');document.getElementById('lightning-send-form').classList.remove('hidden')" class="flex-1 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-xs text-gray-600 dark:text-gray-300">返回修改</button>
+            <button id="lightning-send-confirm" type="button" onclick="window.confirmLightningPayment()" class="flex-1 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold">确认付款</button>
+          </div>
+        </div>
+        <div id="lightning-send-success" class="hidden rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 p-3 text-xs text-green-700 dark:text-green-300"></div>
+        <div id="lightning-send-result-actions" class="hidden">
+          <button type="button" onclick="window.lookupLightningPayment(window.__dgchatLastLightningHash)" class="w-full py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-200">查询付款状态</button>
+        </div>
+        <div id="lightning-send-status" class="text-xs text-gray-500 dark:text-gray-400" role="status"></div>
+        <div class="pt-2 border-t border-gray-100 dark:border-gray-800 space-y-1">
+          <div class="text-[11px] font-semibold text-gray-600 dark:text-gray-300">本机与此好友的付款记录</div>
+          <div id="lightning-peer-history"></div>
+          <p class="text-[10px] text-gray-400">仅显示本机 DGChat 发起的付款，不代表完整的闪电钱包账单。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+<script id="dgchat-lightning-wallet-v0114">
+/* DGChat Lightning Wallet module. Independent from the NBTC wallet. */
+(function () {
+  "use strict";
+
+  const STORAGE_CONNECTION = "lightning_nwc_connection_v1";
+  const STORAGE_HISTORY = "lightning_tx_history_v1";
+  const DEFAULT_RELAY = "wss://relay.getalby.com/v1";
+  const APP_NAME = "DGChat";
+  const MAX_HISTORY = 100;
+  const MAX_RELAY_COUNT = 3;
+  let loadedFor = null;
+  let connection = null;
+  let txHistory = [];
+  let balanceMsat = null;
+  let pairing = null;
+  let paymentBusy = false;
+  let currentPaymentPeer = null;
+  let currentInvoiceDraft = null;
+
+  const $ = id => document.getElementById(id);
+  const safeText = (el, value) => { if (el) el.textContent = value == null ? "" : String(value); };
+  const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+  const randomHex = n => { const b = new Uint8Array(n); crypto.getRandomValues(b); return hex(b); };
+  const validHex = (v, n) => typeof v === "string" && new RegExp("^[0-9a-f]{" + (n * 2) + "}$", "i").test(v);
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  function notify(message, kind = "info") {
+    let node = $("dgchat-lightning-toast");
+    if (!node) {
+      node = document.createElement("div");
+      node.id = "dgchat-lightning-toast";
+      node.style.cssText = "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99999;max-width:90vw;padding:10px 14px;border-radius:9px;color:white;font-size:12px;box-shadow:0 8px 24px #0005;text-align:center";
+      document.body.appendChild(node);
+    }
+    node.style.background = kind === "error" ? "#991b1b" : kind === "success" ? "#166534" : "#374151";
+    node.textContent = String(message || "");
+    node.hidden = false;
+    clearTimeout(node.__hideTimer);
+    node.__hideTimer = setTimeout(() => { node.hidden = true; }, 3500);
+  }
+
+  async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try { return await fetch(url, { ...options, signal: controller.signal }); }
+    finally { clearTimeout(timer); }
+  }
+
+  function validRelay(value) {
+    try {
+      const u = new URL(String(value || "").trim());
+      return u.protocol === "wss:" && !!u.hostname && !u.username && !u.password && !u.hash;
+    } catch (_) { return false; }
+  }
+
+  function normalizeRelayList(values) {
+    const out = [];
+    for (const value of values || []) {
+      const v = String(value || "").trim();
+      if (validRelay(v) && !out.includes(v)) out.push(v);
+      if (out.length >= MAX_RELAY_COUNT) break;
+    }
+    return out;
+  }
+
+  function normalizeLightningAddress(value) {
+    const raw = String(value || "").trim();
+    if (!raw || raw.length > 320 || /[\s/:?#]/.test(raw)) return null;
+    const at = raw.lastIndexOf("@");
+    if (at <= 0 || at === raw.length - 1 || raw.indexOf("@") !== at) return null;
+    const username = raw.slice(0, at);
+    const domain = raw.slice(at + 1);
+    if (!/^[A-Za-z0-9._+-]{1,128}$/.test(username)) return null;
+    let u;
+    try { u = new URL("https://" + domain); } catch (_) { return null; }
+    const host = u.hostname.toLowerCase();
+    if (!host || !host.includes(".") || u.port || u.username || u.password || u.pathname !== "/" ||
+        host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal") ||
+        /^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.startsWith("[") || host.endsWith(".onion")) return null;
+    return { address: username + "@" + host, username, domain: host, endpoint: "https://" + host + "/.well-known/lnurlp/" + encodeURIComponent(username) };
+  }
+
+  async function ensureLoaded() {
+    if (!pubKeyHex || !privKeyHex || isLocked) throw new Error("请先解锁 DGChat 账户");
+    if (loadedFor === pubKeyHex) return;
+    loadedFor = pubKeyHex;
+    connection = null;
+    txHistory = [];
+    balanceMsat = null;
+    try {
+      const saved = await loadEncryptedData(STORAGE_CONNECTION, null);
+      if (saved && saved.version === 1 && saved.clientPubkey && saved.walletPubkey && saved.secret &&
+          validHex(saved.secret, 32) && validHex(saved.clientPubkey, 32) && validHex(saved.walletPubkey, 32) &&
+          normalizeRelayList(saved.relays).length) {
+        connection = {
+          ...saved,
+          relays: normalizeRelayList(saved.relays),
+          methods: Array.isArray(saved.methods) ? saved.methods : []
+        };
+      }
+    } catch (e) { console.warn("[Lightning] 本地连接信息读取失败：", e); }
+    try {
+      const rows = await loadEncryptedData(STORAGE_HISTORY, []);
+      txHistory = Array.isArray(rows) ? rows.filter(x => x && typeof x === "object").slice(0, MAX_HISTORY) : [];
+      let changed = false;
+      for (const row of txHistory) {
+        if (row.state === "paying") { row.state = "unknown"; changed = true; }
+      }
+      if (changed) await saveHistory();
+    } catch (e) { console.warn("[Lightning] 本地付款记录读取失败：", e); }
+  }
+
+  async function saveConnection() {
+    const snapshot = connection ? { ...connection, relays: [...connection.relays], methods: [...connection.methods] } : null;
+    await saveEncryptedData(STORAGE_CONNECTION, snapshot);
+    const verified = await loadEncryptedData(STORAGE_CONNECTION, null);
+    if (JSON.stringify(verified) !== JSON.stringify(snapshot)) throw new Error("无法安全保存闪电钱包连接信息，请检查本地存储空间");
+  }
+
+  async function saveHistory() {
+    txHistory = txHistory.slice(0, MAX_HISTORY);
+    const snapshot = txHistory.map(row => ({ ...row }));
+    await saveEncryptedData(STORAGE_HISTORY, snapshot);
+    const verified = await loadEncryptedData(STORAGE_HISTORY, null);
+    if (!Array.isArray(verified) || JSON.stringify(verified) !== JSON.stringify(snapshot)) throw new Error("无法安全保存本机付款记录，请检查本地存储空间");
+  }
+
+  function connectionReady() {
+    return !!(connection && connection.secret && connection.walletPubkey && connection.relays && connection.relays.length &&
+      Array.isArray(connection.methods) && connection.methods.includes("pay_invoice"));
+  }
+
+  function setManagerStatus(message, kind = "info") {
+    const el = $("lightning-wallet-status");
+    if (!el) return;
+    el.textContent = message;
+    el.className = "mt-2 text-xs " + (kind === "error" ? "text-red-600 dark:text-red-400" : kind === "success" ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-400");
+  }
+
+  function renderManager() {
+    const connected = connectionReady();
+    const state = $("lightning-wallet-connected");
+    const connectBox = $("lightning-wallet-connect-box");
+    const connectedBox = $("lightning-wallet-connected-box");
+    if (state) state.textContent = connected ? "已连接" : "尚未连接";
+    if (state) state.className = "text-xs font-semibold " + (connected ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-400");
+    if (connectBox) connectBox.classList.toggle("hidden", connected);
+    if (connectedBox) connectedBox.classList.toggle("hidden", !connected);
+    safeText($("lightning-wallet-alias"), connected ? (connection.alias || "已连接的钱包") : "");
+    safeText($("lightning-wallet-network"), connected ? (connection.network || "未知网络") : "");
+    safeText($("lightning-wallet-methods"), connected ? connection.methods.join("、") : "");
+    safeText($("lightning-wallet-balance"), balanceMsat == null ? "点击刷新" : (formatMsat(balanceMsat)));
+    const disconnect = $("lightning-wallet-disconnect");
+    if (disconnect) disconnect.classList.toggle("hidden", !connected);
+    renderManagerHistory();
+  }
+
+  function formatMsat(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return "—";
+    const sats = n / 1000;
+    return (Number.isInteger(sats) ? sats.toLocaleString("en-US") : sats.toLocaleString("en-US", { maximumFractionDigits: 3 })) + " sats";
+  }
+
+  function formatSats(value) {
+    const n = Number(value);
+    return Number.isFinite(n) ? Math.round(n).toLocaleString("en-US") + " sats" : "—";
+  }
+
+  function renderManagerHistory() {
+    const holder = $("lightning-wallet-history");
+    if (!holder) return;
+    holder.replaceChildren();
+    const rows = txHistory.slice(0, 8);
+    if (!rows.length) {
+      const empty = document.createElement("div");
+      empty.className = "text-xs text-gray-400 py-2 text-center";
+      empty.textContent = "暂无本机发起的闪电网络付款记录";
+      holder.append(empty);
+      return;
+    }
+    for (const row of rows) {
+      const item = document.createElement("div");
+      item.className = "flex items-center gap-2 py-2 border-b border-gray-100 dark:border-gray-800 last:border-0";
+      const main = document.createElement("div"); main.className = "flex-1 min-w-0";
+      const title = document.createElement("div"); title.className = "text-xs text-gray-700 dark:text-gray-200 truncate";
+      title.textContent = "向 " + (row.peerName || row.recipientAddress || "闪电地址") + " 付款";
+      const sub = document.createElement("div"); sub.className = "text-[10px] text-gray-400 truncate";
+      sub.textContent = new Date(Number(row.timestamp || Date.now())).toLocaleString() + " · " + lightningStateLabel(row.state);
+      main.append(title, sub);
+      const amount = document.createElement("strong"); amount.className = "text-xs whitespace-nowrap " + (row.state === "paid" ? "text-green-600" : "text-gray-500 dark:text-gray-300");
+      amount.textContent = "−" + formatSats(row.amountSats);
+      item.append(main, amount);
+      if (row.state === "unknown" && connectionReady() && connection.methods.includes("lookup_invoice")) {
+        const check = document.createElement("button"); check.type = "button"; check.className = "text-[10px] text-blue-600 px-2 py-1 rounded border border-blue-200 dark:border-blue-800"; check.textContent = "查询";
+        check.addEventListener("click", () => lookupPayment(row.paymentHash)); item.append(check);
+      }
+      holder.append(item);
+    }
+  }
+
+  function lightningStateLabel(state) {
+    return ({ paid: "已支付", failed: "支付失败", unknown: "结果待确认", paying: "处理中" })[state] || "未知状态";
+  }
+
+  function openManager() {
+    ensureLoaded().then(() => {
+      renderManager();
+      const relayInput = $("lightning-connect-relay");
+      if (relayInput) relayInput.value = localStorage.getItem("dage_ln_nwc_relay_" + pubKeyHex) || relayInput.value || DEFAULT_RELAY;
+      $("lightning-wallet-modal").classList.remove("hidden");
+      if (typeof ModalManager !== "undefined" && ModalManager.push) ModalManager.push("lightningWallet", closeManager);
+    }).catch(e => notify(e.message || String(e), "error"));
+  }
+
+  function closeManager(fromPopState = false) {
+    closePairing();
+    const modal = $("lightning-wallet-modal");
+    if (modal) modal.classList.add("hidden");
+    if (!fromPopState && typeof ModalManager !== "undefined" && ModalManager.pop) ModalManager.pop("lightningWallet");
+  }
+
+  async function copyPairingUri() {
+    if (!pairing || !pairing.uri) return;
+    try {
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(pairing.uri);
+      else {
+        const field = document.createElement("textarea"); field.value = pairing.uri; document.body.appendChild(field); field.select();
+        if (!document.execCommand("copy")) throw new Error("copy failed"); field.remove();
+      }
+      notify("连接链接已复制，可粘贴到手机钱包中打开。", "success");
+    } catch (_) { notify("复制失败，请使用二维码连接。", "error"); }
+  }
+
+  function closePairing() {
+    if (pairing) {
+      clearTimeout(pairing.timer);
+      try { pairing.ws && pairing.ws.close(); } catch (_) {}
+      pairing = null;
+    }
+    const box = $("lightning-pairing-box"); if (box) box.classList.add("hidden");
+    const qr = $("lightning-pairing-qr"); if (qr) qr.replaceChildren();
+  }
+
+  function createWalletAuthUri(clientPubkey, state, relay) {
+    const u = new URL("nostr+walletauth://" + clientPubkey);
+    u.searchParams.set("relay", relay);
+    u.searchParams.set("state", state);
+    u.searchParams.set("name", APP_NAME);
+    u.searchParams.set("request_methods", "pay_invoice get_info");
+    u.searchParams.set("optional_request_methods", "get_balance lookup_invoice");
+    return u.toString();
+  }
+
+  async function startPairing() {
+    await ensureLoaded();
+    if (pairing) closePairing();
+    const relay = String($("lightning-connect-relay")?.value || DEFAULT_RELAY).trim();
+    if (!validRelay(relay)) return setManagerStatus("请输入有效的 WSS 闪电钱包连接节点地址。", "error");
+    try { localStorage.setItem("dage_ln_nwc_relay_" + pubKeyHex, relay); } catch (_) {}
+    const secret = nt.generatePrivateKey();
+    const clientPubkey = nt.getPublicKey(secret);
+    const state = randomHex(32);
+    const uri = createWalletAuthUri(clientPubkey, state, relay);
+    const qr = $("lightning-pairing-qr");
+    if (!qr || typeof QRCode === "undefined") throw new Error("二维码组件尚未加载，请刷新页面后重试");
+    qr.replaceChildren();
+    new QRCode(qr, { text: uri, width: 240, height: 240, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
+    $("lightning-pairing-box").classList.remove("hidden");
+    setManagerStatus("等待钱包确认连接。请用支持一键连接的闪电钱包扫描二维码。", "info");
+    pairing = { secret, clientPubkey, state, relay, uri, ws: null, timer: null, handled: false };
+    pairing.timer = setTimeout(() => {
+      if (!pairing || pairing.handled) return;
+      closePairing();
+      setManagerStatus("等待超时。请确认钱包支持一键连接，或尝试手动连接方式。", "error");
+    }, 120000);
+    try {
+      const ws = new WebSocket(relay);
+      pairing.ws = ws;
+      ws.onopen = () => {
+        if (!pairing || pairing.clientPubkey !== clientPubkey) return;
+        ws.send(JSON.stringify(["REQ", "ln-pair-" + state.slice(0, 12), { kinds: [13194], "#p": [clientPubkey], limit: 20 }]));
+      };
+      ws.onmessage = ev => {
+        if (!pairing || pairing.clientPubkey !== clientPubkey || pairing.handled) return;
+        let msg; try { msg = JSON.parse(ev.data); } catch (_) { return; }
+        if (!Array.isArray(msg) || msg[0] !== "EVENT" || !msg[2]) return;
+        void handlePairingInfoEvent(msg[2], { secret, clientPubkey, state, relay });
+      };
+      ws.onerror = () => {
+        if (pairing && pairing.clientPubkey === clientPubkey && !pairing.handled) setManagerStatus("连接钱包节点失败，请更换连接节点或稍后重试。", "error");
+      };
+      ws.onclose = () => {
+        if (pairing && pairing.clientPubkey === clientPubkey && !pairing.handled) setManagerStatus("钱包连接节点已断开，仍可重新生成二维码。", "error");
+      };
+    } catch (e) {
+      closePairing();
+      throw e;
+    }
+  }
+
+  function validNostrEvent(ev) {
+    try { return !!(ev && nt.validateEvent(ev) && nt.getEventHash(ev) === ev.id && nt.verifySignature(ev)); }
+    catch (_) { return false; }
+  }
+
+  function eventTag(ev, name) {
+    const tag = Array.isArray(ev.tags) ? ev.tags.find(t => Array.isArray(t) && t[0] === name && typeof t[1] === "string") : null;
+    return tag ? tag[1] : null;
+  }
+
+  async function handlePairingInfoEvent(ev, req) {
+    if (!pairing || pairing.handled || !validNostrEvent(ev) || ev.kind !== 13194) return;
+    if (eventTag(ev, "p") !== req.clientPubkey || eventTag(ev, "state") !== req.state) return;
+    const methods = String(ev.content || "").split(/\s+/).filter(Boolean);
+    if (!methods.includes("pay_invoice") || !methods.includes("get_info")) {
+      pairing.handled = true;
+      closePairing();
+      return setManagerStatus("此钱包未开放必要的付款权限，无法连接。", "error");
+    }
+    const encryptionTag = eventTag(ev, "encryption");
+    const schemes = encryptionTag ? encryptionTag.split(/\s+/) : ["nip04"];
+    const encryption = schemes.includes("nip44_v2") ? "nip44_v2" : schemes.includes("nip04") ? "nip04" : null;
+    if (!encryption) {
+      pairing.handled = true; closePairing();
+      return setManagerStatus("钱包使用了不支持的加密方式。", "error");
+    }
+    let relays = normalizeRelayList((Array.isArray(ev.tags) ? ev.tags.filter(t => t[0] === "relay").map(t => t[1]) : []));
+    if (!relays.length) relays = [req.relay];
+    pairing.handled = true;
+    setManagerStatus("已获得钱包授权，正在验证连接…", "info");
+    try {
+      const candidate = { version: 1, secret: req.secret, clientPubkey: req.clientPubkey, walletPubkey: ev.pubkey, relays, encryption, methods, network: "", alias: "", connectedAt: Date.now() };
+      await finalizeConnection(candidate);
+      closePairing();
+      setManagerStatus("闪电钱包已连接。", "success");
+      renderManager();
+    } catch (e) {
+      closePairing();
+      setManagerStatus("连接验证失败：" + (e.message || e), "error");
+    }
+  }
+
+  async function fetchInfoEvent(relay, walletPubkey) {
+    return new Promise((resolve, reject) => {
+      let ws, done = false;
+      const subId = "ln-info-" + randomHex(6);
+      const timer = setTimeout(() => finish(new Error("读取钱包信息超时")), 9000);
+      function finish(err, value) {
+        if (done) return;
+        if (err && !published) err.notSent = true;
+        done = true; clearTimeout(timer);
+        try { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(["CLOSE", subId])); } catch (_) {}
+        try { ws && ws.close(); } catch (_) {}
+        err ? reject(err) : resolve(value);
+      }
+      try { ws = new WebSocket(relay); } catch (e) { return finish(e); }
+      ws.onopen = () => ws.send(JSON.stringify(["REQ", subId, { kinds: [13194], authors: [walletPubkey], limit: 1 }]));
+      ws.onmessage = ev => {
+        let msg; try { msg = JSON.parse(ev.data); } catch (_) { return; }
+        if (Array.isArray(msg) && msg[0] === "EVENT" && msg[1] === subId && msg[2]) {
+          const item = msg[2];
+          if (validNostrEvent(item) && item.kind === 13194 && item.pubkey === walletPubkey) finish(null, item);
+        } else if (Array.isArray(msg) && msg[0] === "EOSE" && msg[1] === subId) finish(new Error("钱包未返回连接信息"));
+        else if (Array.isArray(msg) && msg[0] === "NOTICE") finish(new Error("连接节点返回错误：" + String(msg[1] || "NOTICE")));
+      };
+      ws.onerror = () => finish(new Error("无法连接钱包指定的 Relay"));
+      ws.onclose = () => { if (!done) finish(new Error("读取钱包信息时连接中断")); };
+    });
+  }
+
+  async function importConnectionUri() {
+    await ensureLoaded();
+    const input = $("lightning-nwc-uri");
+    const raw = String(input?.value || "").trim();
+    if (!raw) return setManagerStatus("请粘贴钱包提供的连接码。", "error");
+    try {
+      const u = new URL(raw);
+      if (u.protocol !== "nostr+walletconnect:") throw new Error("连接码格式不正确");
+      const walletPubkey = (u.hostname || u.pathname.replace(/^\/+/, "")).toLowerCase();
+      const secret = String(u.searchParams.get("secret") || "").toLowerCase();
+      const relays = normalizeRelayList(u.searchParams.getAll("relay"));
+      if (!validHex(walletPubkey, 32) || !validHex(secret, 32) || !relays.length) throw new Error("连接码缺少有效的公钥、密钥或 WSS 节点");
+      setManagerStatus("正在验证钱包连接…", "info");
+      const info = await fetchInfoEvent(relays[0], walletPubkey);
+      const schemes = (eventTag(info, "encryption") || "nip04").split(/\s+/);
+      const encryption = schemes.includes("nip44_v2") ? "nip44_v2" : schemes.includes("nip04") ? "nip04" : null;
+      if (!encryption) throw new Error("钱包加密方式不受支持");
+      const methods = String(info.content || "").split(/\s+/).filter(Boolean);
+      const candidate = { version: 1, secret, clientPubkey: nt.getPublicKey(secret), walletPubkey, relays, encryption, methods, network: "", alias: "", connectedAt: Date.now() };
+      await finalizeConnection(candidate);
+      input.value = "";
+      setManagerStatus("闪电钱包已连接。", "success");
+      renderManager();
+    } catch (e) { setManagerStatus("连接失败：" + (e.message || e), "error"); }
+  }
+
+  async function finalizeConnection(candidate) {
+    const info = await nwcRequest(candidate, "get_info", {}, 25000);
+    const network = String(info.network || "").toLowerCase();
+    if (network !== "mainnet") throw new Error("无法确认钱包处于 Bitcoin 主网，已拒绝连接");
+    const methods = Array.isArray(info.methods) ? info.methods : candidate.methods;
+    if (!methods.includes("pay_invoice")) throw new Error("钱包没有开放付款权限");
+    candidate.methods = [...new Set(methods)];
+    candidate.network = network || "mainnet";
+    candidate.alias = String(info.alias || info.name || "").slice(0, 80);
+    candidate.lud16 = typeof info.lud16 === "string" ? info.lud16 : "";
+    candidate.connectedAt = Date.now();
+    const previous = connection;
+    connection = candidate;
+    try { await saveConnection(); }
+    catch (e) { connection = previous; throw e; }
+  }
+
+  async function nwcEncrypt(conn, text) {
+    if (conn.encryption === "nip44_v2") {
+      const key = nt.nip44.utils.v2.getConversationKey(conn.secret, conn.walletPubkey);
+      return nt.nip44.encrypt(key, text);
+    }
+    return await nt.nip04.encrypt(conn.secret, conn.walletPubkey, text);
+  }
+
+  async function nwcDecrypt(conn, text) {
+    if (conn.encryption === "nip44_v2") {
+      const key = nt.nip44.utils.v2.getConversationKey(conn.secret, conn.walletPubkey);
+      return nt.nip44.decrypt(key, text);
+    }
+    return await nt.nip04.decrypt(conn.secret, conn.walletPubkey, text);
+  }
+
+  async function nwcRequest(conn, method, params = {}, timeoutMs = 35000) {
+    if (!conn || !conn.secret || !conn.walletPubkey || !conn.clientPubkey || !conn.relays?.length) throw new Error("闪电钱包尚未连接");
+    if (Array.isArray(conn.methods) && !conn.methods.includes(method)) throw new Error("钱包未授权此操作：" + method);
+    const relay = conn.relays[0];
+    if (!validRelay(relay)) throw new Error("钱包连接节点地址无效");
+    const now = Math.floor(Date.now() / 1000);
+    const content = await nwcEncrypt(conn, JSON.stringify({ method, params }));
+    const template = { kind: 23194, created_at: now, content, tags: [["p", conn.walletPubkey], ["encryption", conn.encryption], ["expiration", String(now + Math.ceil(timeoutMs / 1000) + 15)]] };
+    const requestEvent = nt.finishEvent(template, conn.secret);
+    return new Promise((resolve, reject) => {
+      let ws, done = false, published = false;
+      const subId = "ln-" + requestEvent.id.slice(0, 20);
+      const timeoutError = new Error(method === "pay_invoice" ? "钱包响应超时；付款结果可能尚未确认，请勿直接重复支付" : "钱包响应超时，请稍后重试");
+      const timer = setTimeout(() => finish(timeoutError), timeoutMs);
+      function finish(err, value) {
+        if (done) return;
+        if (err && !published) err.notSent = true;
+        done = true; clearTimeout(timer);
+        try { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(["CLOSE", subId])); } catch (_) {}
+        try { ws && ws.close(); } catch (_) {}
+        err ? reject(err) : resolve(value);
+      }
+      try { ws = new WebSocket(relay); } catch (e) { return finish(e); }
+      ws.onopen = () => {
+        try {
+          ws.send(JSON.stringify(["REQ", subId, { kinds: [23195], authors: [conn.walletPubkey], "#p": [conn.clientPubkey], "#e": [requestEvent.id], since: now - 10, limit: 5 }]));
+          ws.send(JSON.stringify(["EVENT", requestEvent]));
+          published = true;
+        } catch (e) { finish(e); }
+      };
+      ws.onmessage = async ev => {
+        let msg; try { msg = JSON.parse(ev.data); } catch (_) { return; }
+        if (!Array.isArray(msg)) return;
+        if (msg[0] === "OK" && msg[1] === requestEvent.id && msg[2] === false) {
+          const err = new Error("钱包节点未接受请求：" + String(msg[3] || "拒绝")); err.notSent = true; return finish(err);
+        }
+        if (msg[0] === "EVENT" && msg[1] === subId && msg[2]) {
+          const response = msg[2];
+          if (!validNostrEvent(response) || response.kind !== 23195 || response.pubkey !== conn.walletPubkey ||
+              eventTag(response, "p") !== conn.clientPubkey || eventTag(response, "e") !== requestEvent.id) return;
+          try {
+            const body = JSON.parse(await nwcDecrypt(conn, response.content));
+            if (!body || body.result_type !== method) return;
+            if (body.error) {
+              const err = new Error(String(body.error.message || body.error.code || "钱包操作失败"));
+              err.code = String(body.error.code || "OTHER");
+              return finish(err);
+            }
+            if (!body.result || typeof body.result !== "object") return finish(new Error("钱包返回了无效结果"));
+            finish(null, body.result);
+          } catch (e) { finish(e); }
+        }
+      };
+      ws.onerror = () => { if (!published) { const err = new Error("无法连接闪电钱包 Relay"); err.notSent = true; finish(err); } };
+      ws.onclose = () => { if (!done && !published) { const err = new Error("闪电钱包 Relay 连接中断"); err.notSent = true; finish(err); } };
+    });
+  }
+
+  async function refreshBalance() {
+    await ensureLoaded();
+    if (!connectionReady()) return setManagerStatus("请先连接闪电钱包。", "error");
+    if (!connection.methods.includes("get_balance")) return setManagerStatus("当前钱包未开放余额查询权限，但不影响付款。", "info");
+    try {
+      const result = await nwcRequest(connection, "get_balance", {}, 20000);
+      if (!Number.isSafeInteger(Number(result.balance)) || Number(result.balance) < 0) throw new Error("钱包返回的余额格式无效");
+      balanceMsat = Number(result.balance);
+      safeText($("lightning-wallet-balance"), formatMsat(balanceMsat));
+      setManagerStatus("余额已更新。", "success");
+    } catch (e) { setManagerStatus("余额暂时无法更新：" + (e.message || e), "error"); }
+  }
+
+  async function disconnectWallet() {
+    if (!confirm("确定断开闪电钱包连接吗？本机已保存的付款记录不会删除。")) return;
+    closePairing();
+    const previous = connection;
+    connection = null; balanceMsat = null;
+    try { await saveConnection(); }
+    catch (e) { connection = previous; renderManager(); return setManagerStatus("断开失败：" + (e.message || e), "error"); }
+    renderManager();
+    setManagerStatus("闪电钱包已断开。", "success");
+  }
+
+  function updateChatButton() {
+    const button = $("lightning-chat-button");
+    if (!button) return;
+    const peer = currentChatPk && !groups[currentChatPk] && currentChatPk !== pubKeyHex ? profiles[currentChatPk] : null;
+    const address = peer && normalizeLightningAddress(peer.lud16 || peer.ln);
+    button.classList.toggle("hidden", !address);
+    if (address) button.title = "向 " + (peer.name || "好友") + " 闪电转账";
+  }
+
+  function renderPeerHistory(peerPk) {
+    const holder = $("lightning-peer-history");
+    if (!holder) return;
+    holder.replaceChildren();
+    const rows = txHistory.filter(x => x.peerPubkey === peerPk).slice(0, 6);
+    if (!rows.length) {
+      const empty = document.createElement("div"); empty.className = "text-[10px] text-gray-400 py-2"; empty.textContent = "暂无本机向此好友发起的闪电付款记录"; holder.append(empty); return;
+    }
+    for (const row of rows) {
+      const line = document.createElement("div"); line.className = "flex items-center justify-between gap-2 py-1.5 border-b border-gray-100 dark:border-gray-800 last:border-0";
+      const label = document.createElement("span"); label.className = "text-[10px] text-gray-500 dark:text-gray-400"; label.textContent = new Date(Number(row.timestamp || Date.now())).toLocaleString() + " · " + lightningStateLabel(row.state);
+      const amount = document.createElement("strong"); amount.className = "text-[11px] text-gray-700 dark:text-gray-200"; amount.textContent = "−" + formatSats(row.amountSats);
+      line.append(label, amount); holder.append(line);
+    }
+  }
+
+  async function openPayment(peerPk) {
+    await ensureLoaded();
+    if (peerPk === pubKeyHex) return notify("不能向自己的闪电地址转账。", "info");
+    const peer = profiles[peerPk];
+    if (!peer || groups[peerPk]) return notify("当前对象没有可用的个人资料。", "error");
+    const parsed = normalizeLightningAddress(peer.lud16 || peer.ln);
+    if (!parsed) return notify("对方没有填写有效的闪电网络地址。", "info");
+    currentPaymentPeer = peerPk;
+    currentInvoiceDraft = null;
+    paymentBusy = false;
+    safeText($("lightning-send-peer-name"), peer.name || "好友");
+    safeText($("lightning-send-address"), parsed.address);
+    safeText($("lightning-send-domain"), parsed.domain);
+    safeText($("lightning-send-status"), "");
+    safeText($("lightning-send-summary"), "");
+    $("lightning-send-amount").value = "";
+    $("lightning-send-comment").value = "";
+    $("lightning-send-form").classList.remove("hidden");
+    $("lightning-send-preview").classList.add("hidden");
+    $("lightning-send-success").classList.add("hidden");
+    $("lightning-send-result-actions").classList.add("hidden");
+    $("lightning-send-connect-needed").classList.toggle("hidden", connectionReady());
+    $("lightning-send-submit").disabled = false;
+    renderPeerHistory(peerPk);
+    $("lightning-send-modal").classList.remove("hidden");
+    if (typeof ModalManager !== "undefined" && ModalManager.push) ModalManager.push("lightningSend", closePayment);
+  }
+
+  function closePayment(fromPopState = false) {
+    if (paymentBusy) return notify("付款请求正在处理中，请等待结果返回。", "info");
+    const modal = $("lightning-send-modal"); if (modal) modal.classList.add("hidden");
+    currentInvoiceDraft = null;
+    if (!fromPopState && typeof ModalManager !== "undefined" && ModalManager.pop) ModalManager.pop("lightningSend");
+  }
+
+  async function requestLnurlInvoice() {
+    await ensureLoaded();
+    if (!connectionReady()) {
+      $("lightning-send-connect-needed").classList.remove("hidden");
+      return safeText($("lightning-send-status"), "请先连接闪电钱包，再获取付款请求。"), null;
+    }
+    const peer = profiles[currentPaymentPeer];
+    const parsed = normalizeLightningAddress(peer?.lud16 || peer?.ln);
+    if (!parsed) throw new Error("好友的闪电地址无效或已变更");
+    const satsText = String($("lightning-send-amount").value || "").trim();
+    if (!/^\d{1,12}$/.test(satsText)) throw new Error("请输入正整数 sats 金额");
+    const sats = Number(satsText);
+    if (!Number.isSafeInteger(sats) || sats <= 0) throw new Error("转账金额超出有效范围");
+    const comment = String($("lightning-send-comment").value || "").trim();
+    safeText($("lightning-send-status"), "正在获取付款请求…");
+    const response = await fetchWithTimeout(parsed.endpoint, { method: "GET", mode: "cors", credentials: "omit", cache: "no-store", redirect: "follow", headers: { Accept: "application/json" } }, 15000);
+    if (Number(response.headers.get("content-length") || 0) > 1048576) throw new Error("收款服务响应过大，已停止处理");
+    if (!response.ok) throw new Error("收款服务暂不可用（HTTP " + response.status + "）");
+    if (!String(response.url || parsed.endpoint).startsWith("https://")) throw new Error("收款服务未使用安全 HTTPS 地址");
+    const pay = await response.json();
+    if (!pay || pay.status === "ERROR" || pay.tag !== "payRequest" || typeof pay.callback !== "string" || typeof pay.metadata !== "string" || pay.metadata.length > 12000) throw new Error(String(pay?.reason || "对方的收款服务返回了无效信息"));
+    let metadataRows;
+    try { metadataRows = JSON.parse(pay.metadata); } catch (_) { throw new Error("收款服务的付款说明格式无效"); }
+    if (!Array.isArray(metadataRows) || metadataRows.some(row => !Array.isArray(row) || typeof row[0] !== "string")) throw new Error("收款服务的付款说明格式无效");
+    const paymentDescription = (metadataRows.find(row => row[0] === "text/plain" && typeof row[1] === "string") || [])[1] || "";
+    const callback = new URL(pay.callback);
+    if (callback.protocol !== "https:" || callback.username || callback.password) throw new Error("收款服务的付款回调地址不安全");
+    const min = Number(pay.minSendable), max = Number(pay.maxSendable), amountMsat = sats * 1000;
+    if (!Number.isSafeInteger(min) || !Number.isSafeInteger(max) || min <= 0 || max < min) throw new Error("收款服务提供的金额范围无效");
+    if (amountMsat < min || amountMsat > max) throw new Error("金额超出对方收款范围：" + formatMsat(min) + " 至 " + formatMsat(max));
+    const commentAllowed = Number(pay.commentAllowed || 0);
+    if (comment && (!Number.isInteger(commentAllowed) || commentAllowed <= 0 || [...comment].length > commentAllowed)) throw new Error(commentAllowed > 0 ? "备注最多允许 " + commentAllowed + " 个字符" : "对方收款服务不接受备注");
+    callback.searchParams.set("amount", String(amountMsat));
+    if (comment) callback.searchParams.set("comment", comment);
+    const invoiceResponse = await fetchWithTimeout(callback.toString(), { method: "GET", mode: "cors", credentials: "omit", cache: "no-store", redirect: "follow", headers: { Accept: "application/json" } }, 15000);
+    if (Number(invoiceResponse.headers.get("content-length") || 0) > 1048576) throw new Error("付款请求响应过大，已停止处理");
+    if (!invoiceResponse.ok) throw new Error("付款请求生成失败（HTTP " + invoiceResponse.status + "）");
+    if (!String(invoiceResponse.url || callback.toString()).startsWith("https://")) throw new Error("付款请求返回了不安全的地址");
+    const invoiceBody = await invoiceResponse.json();
+    if (!invoiceBody || invoiceBody.status === "ERROR" || typeof invoiceBody.pr !== "string") throw new Error(String(invoiceBody?.reason || "收款服务没有返回有效付款请求"));
+    const decoded = decodeBolt11(invoiceBody.pr);
+    if (decoded.network !== "mainnet") throw new Error("对方返回的不是 Bitcoin 主网付款请求");
+    if (decoded.amountMsat !== amountMsat) throw new Error("付款请求金额与输入金额不一致，已停止付款");
+    const expectedDescriptionHash = hex(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pay.metadata))));
+    if (!decoded.descriptionHash || decoded.descriptionHash !== expectedDescriptionHash) throw new Error("付款说明校验失败，已停止付款");
+    if (decoded.expiresAt <= Math.floor(Date.now() / 1000)) throw new Error("付款请求已经过期，请重新获取");
+    currentInvoiceDraft = { invoice: invoiceBody.pr.toLowerCase(), paymentHash: decoded.paymentHash, amountSats: sats, amountMsat, expiresAt: decoded.expiresAt, recipientAddress: parsed.address, peerPubkey: currentPaymentPeer, peerName: peer.name || "好友", comment, description: paymentDescription };
+    safeText($("lightning-send-preview-address"), parsed.address);
+    safeText($("lightning-send-preview-amount"), formatSats(sats));
+    safeText($("lightning-send-preview-expiry"), new Date(decoded.expiresAt * 1000).toLocaleString());
+    safeText($("lightning-send-preview-description"), paymentDescription || "无额外说明");
+    $("lightning-send-form").classList.add("hidden");
+    $("lightning-send-preview").classList.remove("hidden");
+    safeText($("lightning-send-status"), "付款请求已准备好。请核对收款对象和金额后再确认。 ");
+    return currentInvoiceDraft;
+  }
+
+  async function preparePayment() {
+    const button = $("lightning-send-submit");
+    if (button) button.disabled = true;
+    try { await requestLnurlInvoice(); }
+    catch (e) { safeText($("lightning-send-status"), "无法获取付款请求：" + (e.message || e)); }
+    finally { if (button) button.disabled = false; }
+  }
+
+  async function confirmPayment() {
+    if (paymentBusy) return;
+    await ensureLoaded();
+    if (!connectionReady()) return safeText($("lightning-send-status"), "闪电钱包尚未连接，请先连接钱包。");
+    if (!currentInvoiceDraft) return safeText($("lightning-send-status"), "付款请求已失效，请重新获取。");
+    if (currentInvoiceDraft.expiresAt <= Math.floor(Date.now() / 1000)) {
+      currentInvoiceDraft = null; $("lightning-send-preview").classList.add("hidden"); $("lightning-send-form").classList.remove("hidden");
+      return safeText($("lightning-send-status"), "付款请求已过期，请重新获取。");
+    }
+    if (!confirm("确认向 " + currentInvoiceDraft.peerName + " 支付 " + currentInvoiceDraft.amountSats + " sats？\n\n收款地址：" + currentInvoiceDraft.recipientAddress + "\n\n闪电网络手续费由钱包最终确定。付款一旦成功，通常无法撤销。")) return;
+    paymentBusy = true;
+    $("lightning-send-confirm").disabled = true;
+    safeText($("lightning-send-status"), "正在向钱包提交付款…请勿关闭页面或重复付款。");
+    const draft = currentInvoiceDraft;
+    const record = { id: draft.paymentHash, paymentHash: draft.paymentHash, peerPubkey: draft.peerPubkey, peerName: draft.peerName, recipientAddress: draft.recipientAddress, amountSats: draft.amountSats, feeMsat: null, timestamp: Date.now(), state: "paying", comment: draft.comment || "", description: draft.description || "" };
+    txHistory = [record, ...txHistory.filter(x => x.paymentHash !== record.paymentHash)].slice(0, MAX_HISTORY);
+    window.__dgchatLastLightningHash = draft.paymentHash;
+    try { await saveHistory(); }
+    catch (e) {
+      txHistory = txHistory.filter(x => x.paymentHash !== record.paymentHash);
+      paymentBusy = false;
+      $("lightning-send-confirm").disabled = false;
+      safeText($("lightning-send-status"), "无法安全保存付款状态，已停止发送，未向钱包提交付款。");
+      return;
+    }
+    try {
+      const result = await nwcRequest(connection, "pay_invoice", { invoice: draft.invoice }, 60000);
+      if (!validHex(String(result.preimage || ""), 32)) throw new Error("钱包未返回可验证的付款凭证，结果暂不能确认为成功");
+      const digest = hex(new Uint8Array(await crypto.subtle.digest("SHA-256", Uint8Array.from(result.preimage.match(/.{2}/g).map(x => parseInt(x, 16))))));
+      if (digest.toLowerCase() !== draft.paymentHash.toLowerCase()) throw new Error("钱包付款凭证校验失败，付款结果需要进一步查询");
+      record.state = "paid";
+      record.feeMsat = Number.isSafeInteger(Number(result.fees_paid)) ? Number(result.fees_paid) : null;
+      record.timestamp = Date.now();
+      let historySaved = true;
+      try { await saveHistory(); } catch (e) { historySaved = false; console.warn("[Lightning] 付款成功，但本机历史记录保存失败：", e); }
+      safeText($("lightning-send-status"), "付款成功。" + (record.feeMsat != null ? " 手续费：" + formatMsat(record.feeMsat) : "") + (historySaved ? "" : " 本机记录保存失败，请以钱包账单为准。"));
+      safeText($("lightning-send-success"), "付款成功。已向 " + draft.peerName + " 支付 " + formatSats(draft.amountSats) + (record.feeMsat != null ? "；手续费 " + formatMsat(record.feeMsat) : "") + (historySaved ? "。" : "。但本机记录未能保存，请以钱包账单为准。"));
+      $("lightning-send-preview").classList.add("hidden");
+      $("lightning-send-success").classList.remove("hidden");
+      $("lightning-send-result-actions").classList.add("hidden");
+      renderPeerHistory(draft.peerPubkey);
+      renderManagerHistory();
+      if (connection.methods.includes("get_balance")) void refreshBalance();
+    } catch (e) {
+      record.state = e.code === "PAYMENT_FAILED" || e.notSent ? "failed" : "unknown";
+      record.error = String(e.message || e).slice(0, 240);
+      record.timestamp = Date.now();
+      try { await saveHistory(); } catch (_) {}
+      safeText($("lightning-send-status"), record.state === "failed" ? (e.notSent ? "付款请求未送达钱包：" : "钱包报告付款失败：") + record.error : "付款结果暂未确认。请勿重复支付；如钱包支持状态查询，可稍后查询此笔付款。" );
+      $("lightning-send-preview").classList.add("hidden");
+      $("lightning-send-result-actions").classList.toggle("hidden", !(record.state === "unknown" && connectionReady() && connection.methods.includes("lookup_invoice")));
+      renderPeerHistory(draft.peerPubkey);
+      renderManagerHistory();
+    } finally {
+      paymentBusy = false;
+      $("lightning-send-confirm").disabled = false;
+    }
+  }
+
+  async function lookupPayment(paymentHash) {
+    await ensureLoaded();
+    if (!connectionReady() || !connection.methods.includes("lookup_invoice")) return notify("当前钱包不支持付款状态查询。", "info");
+    const row = txHistory.find(x => x.paymentHash === paymentHash);
+    if (!row) return;
+    try {
+      const result = await nwcRequest(connection, "lookup_invoice", { payment_hash: paymentHash }, 25000);
+      const state = String(result.state || "").toLowerCase();
+      if (state === "settled") row.state = "paid";
+      else if (state === "failed" || state === "expired") row.state = "failed";
+      else if (state === "pending" || state === "accepted") row.state = "unknown";
+      else throw new Error("钱包返回了无法识别的付款状态");
+      if (result.fees_paid != null && Number.isSafeInteger(Number(result.fees_paid))) row.feeMsat = Number(result.fees_paid);
+      await saveHistory();
+      renderManager();
+      if (currentPaymentPeer) renderPeerHistory(currentPaymentPeer);
+      notify("付款状态已更新：" + lightningStateLabel(row.state), row.state === "paid" ? "success" : "info");
+    } catch (e) { notify("查询失败：" + (e.message || e), "error"); }
+  }
+
+  function decodeBolt11(invoice) {
+    const value = String(invoice || "").trim();
+    if (!value || value.length > 1023 || (value !== value.toLowerCase() && value !== value.toUpperCase())) throw new Error("付款请求格式无效");
+    const str = value.toLowerCase();
+    const pos = str.lastIndexOf("1");
+    if (pos < 1 || pos + 7 > str.length) throw new Error("付款请求格式无效");
+    const hrp = str.slice(0, pos), charset = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
+    const data = [];
+    for (const ch of str.slice(pos + 1)) { const n = charset.indexOf(ch); if (n < 0) throw new Error("付款请求包含无效字符"); data.push(n); }
+    const expand = [...Array.from(hrp, c => c.charCodeAt(0) >> 5), 0, ...Array.from(hrp, c => c.charCodeAt(0) & 31)];
+    const gen = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3];
+    let chk = 1;
+    for (const v of [...expand, ...data]) {
+      const top = chk >>> 25; chk = ((chk & 0x1ffffff) << 5) ^ v;
+      for (let i = 0; i < 5; i++) if ((top >>> i) & 1) chk ^= gen[i];
+    }
+    if (chk !== 1) throw new Error("付款请求校验失败");
+    const match = /^lnbc(\d+)([munp]?)$/.exec(hrp);
+    if (!match) throw new Error("仅支持 Bitcoin 主网的固定金额付款请求");
+    const n = BigInt(match[1]);
+    let amountMsat;
+    if (match[2] === "m") amountMsat = n * 100000000n;
+    else if (match[2] === "u") amountMsat = n * 100000n;
+    else if (match[2] === "n") amountMsat = n * 100n;
+    else if (match[2] === "p") { if (n % 10n) throw new Error("付款请求金额精度无效"); amountMsat = n / 10n; }
+    else amountMsat = n * 100000000000n;
+    if (amountMsat > BigInt(Number.MAX_SAFE_INTEGER)) throw new Error("付款请求金额过大");
+    const words = data.slice(0, -6);
+    if (words.length < 7) throw new Error("付款请求数据不完整");
+    let timestamp = 0n; for (const w of words.slice(0, 7)) timestamp = (timestamp << 5n) | BigInt(w);
+    let paymentHash = null, descriptionHash = null, expiry = 3600;
+    const decode32 = field => {
+      let acc = 0, bits = 0; const bytes = [];
+      for (const w of field) { acc = ((acc << 5) | w) & 0xffff; bits += 5; while (bits >= 8) { bits -= 8; bytes.push((acc >>> bits) & 255); } }
+      if (bits >= 5 || ((acc << (8 - bits)) & 255) !== 0 || bytes.length !== 32) throw new Error("付款请求哈希字段无效");
+      return hex(bytes);
+    };
+    for (let i = 7; i < words.length;) {
+      if (i + 3 > words.length) throw new Error("付款请求标签损坏");
+      const tag = words[i++], len = words[i++] * 32 + words[i++];
+      if (i + len > words.length) throw new Error("付款请求标签长度无效");
+      const field = words.slice(i, i + len); i += len;
+      if (tag === 1) {
+        if (paymentHash) throw new Error("付款请求包含重复支付哈希");
+        paymentHash = decode32(field);
+      } else if (tag === 23) {
+        if (descriptionHash) throw new Error("付款请求包含重复说明哈希");
+        descriptionHash = decode32(field);
+      } else if (tag === 6) { let x = 0n; for (const w of field) x = (x << 5n) | BigInt(w); if (x > 86400n * 365n) throw new Error("付款请求有效期异常"); expiry = Number(x); }
+    }
+    if (!paymentHash) throw new Error("付款请求缺少支付哈希");
+    const createdAt = Number(timestamp);
+    if (!Number.isSafeInteger(createdAt) || createdAt <= 0 || createdAt > Math.floor(Date.now() / 1000) + 300) throw new Error("付款请求时间无效");
+    return { network: "mainnet", amountMsat: Number(amountMsat), paymentHash, descriptionHash, expiresAt: createdAt + expiry };
+  }
+
+  function openPeerProfilePayment() {
+    const pk = typeof peerPkToViewGlobal !== "undefined" ? peerPkToViewGlobal : null;
+    if (!pk) return;
+    void openPayment(pk);
+  }
+
+  async function copyRecipientAddress() {
+    const address = String($("lightning-send-address")?.textContent || "").trim();
+    if (!address) return;
+    try {
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(address);
+      else {
+        const field = document.createElement("textarea"); field.value = address; document.body.appendChild(field); field.select();
+        if (!document.execCommand("copy")) throw new Error("copy failed"); field.remove();
+      }
+      notify("闪电收款地址已复制。", "success");
+    } catch (_) { notify("复制失败，请手动选择地址复制。", "error"); }
+  }
+
+  function copyInvoice() {
+    if (!currentInvoiceDraft) return;
+    const text = currentInvoiceDraft.invoice;
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(() => notify("付款请求已复制。", "success")).catch(() => notify("复制失败，请检查浏览器剪贴板权限。", "error"));
+    else { const t = document.createElement("textarea"); t.value = text; document.body.append(t); t.select(); try { document.execCommand("copy"); notify("付款请求已复制。", "success"); } catch (_) { notify("复制失败。", "error"); } t.remove(); }
+  }
+
+  function connectFromPayment() {
+    closePayment();
+    openManager();
+  }
+
+  function clearRuntime() {
+    closePairing();
+    connection = null; txHistory = []; balanceMsat = null; loadedFor = null;
+    paymentBusy = false; currentPaymentPeer = null; currentInvoiceDraft = null;
+  }
+
+  window.openLightningWalletManager = openManager;
+  window.closeLightningWalletManager = closeManager;
+  window.startLightningWalletPairing = () => startPairing().catch(e => setManagerStatus(e.message || String(e), "error"));
+  window.importLightningWalletConnection = () => importConnectionUri();
+  window.refreshLightningWalletBalance = () => refreshBalance();
+  window.disconnectLightningWallet = () => disconnectWallet();
+  window.cancelLightningWalletPairing = closePairing;
+  window.copyLightningWalletAuthUri = () => copyPairingUri();
+  window.openLightningPayment = peerPk => openPayment(peerPk).catch(e => notify(e.message || String(e), "error"));
+  window.closeLightningPayment = closePayment;
+  window.prepareLightningPayment = () => preparePayment();
+  window.confirmLightningPayment = () => confirmPayment();
+  window.lookupLightningPayment = hash => lookupPayment(hash);
+  window.copyLightningInvoice = copyInvoice;
+  window.copyLightningRecipientAddress = () => copyRecipientAddress();
+  window.connectLightningFromPayment = connectFromPayment;
+  window.openPeerProfileLightningPayment = openPeerProfilePayment;
+  window.dgchatLightningUpdateChatButton = updateChatButton;
+  window.addEventListener("beforeunload", clearRuntime);
+  window.addEventListener("storage", ev => { if (ev.key && ev.key.startsWith("dage_enc_" + STORAGE_CONNECTION + "_")) { connection = null; loadedFor = null; } });
+})();
+
 </script>
     </body>
 
