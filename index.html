@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>DGCHAT V0.1.93 单文件版</title>
+  <title>DGCHAT V0.1.113 单文件版</title>
   <style id="dgchat-bundled-tailwind">
 /*! tailwindcss v4.1.10 | MIT License | https://tailwindcss.com */
 @layer properties;
@@ -10847,6 +10847,270 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
       scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
     }
   </style>
+
+<style id="dgchat-nbtc-v0549-ux">
+/* Adapted from nextBTC Wallet V0.5.49; scoped so the existing DGChat UI is unchanged. */
+#nbtc-wallet-modal input,#nbtc-send-modal input,#nbtc-send-modal select{
+  min-height:42px;box-sizing:border-box;max-width:100%;
+}
+#nbtc-wallet-modal button,#nbtc-send-modal button{touch-action:manipulation}
+#nbtc-send-modal .nbtc-address-book-row{display:flex;gap:7px;align-items:center;margin-top:8px;min-width:0}
+#nbtc-send-modal .nbtc-address-book-row select{flex:1;min-width:0;padding:9px 34px 9px 11px;border:1px solid #d1d5db;border-radius:9px;background-color:#fff;color:#374151;font-size:12px}
+.dark #nbtc-send-modal .nbtc-address-book-row select{border-color:#374151;background-color:#1f2937;color:#e5e7eb}
+#nbtc-send-modal .nbtc-address-book-row button{min-height:38px;padding:8px 11px;border-radius:9px;white-space:nowrap}
+#nbtc-send-modal .nbtc-address-book-editor{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:7px;margin-top:8px;align-items:center}
+#nbtc-send-modal .nbtc-address-book-editor input{min-width:0;min-height:38px;padding:7px 10px;font-size:12px}
+#nbtc-send-modal .nbtc-address-book-editor button{min-height:38px;padding:7px 10px;font-size:11px}
+#nbtc-send-modal .nbtc-address-book-note{margin:5px 1px 0;font-size:10px;line-height:1.4;color:#9ca3af}
+#nbtc-trust-cert{border:1px solid #d7a84b;background:rgba(215,168,75,.12);color:#b7791f;border-radius:8px;padding:4px 8px;font-size:10px;font-weight:700;white-space:nowrap}
+.dark #nbtc-trust-cert{color:#ffd27a}
+#nbtc-trust-cert[hidden]{display:none!important}
+#dgchat-nbtc-toast{bottom:calc(20px + env(safe-area-inset-bottom));max-width:min(90vw,520px);max-height:30vh;overflow:auto;box-sizing:border-box}
+@media(max-width:640px){
+ #nbtc-wallet-modal,#nbtc-send-modal{padding:9px!important;align-items:center}
+ #nbtc-wallet-modal>div,#nbtc-send-modal>div{max-height:calc(100dvh - 18px);border-radius:16px}
+ #nbtc-wallet-modal .p-4,#nbtc-send-modal .p-4{padding:12px!important}
+ #nbtc-wallet-modal .space-y-3> :not([hidden])~:not([hidden]),#nbtc-send-modal .space-y-3> :not([hidden])~:not([hidden]){margin-top:10px}
+ #nbtc-send-modal input{min-height:44px;padding:10px 11px;font-size:14px}
+ #nbtc-send-modal button{min-height:42px}
+ #nbtc-send-modal .nbtc-address-book-editor{grid-template-columns:1fr 1fr}
+ #nbtc-send-modal .nbtc-address-book-editor input{grid-column:1/-1}
+ #dgchat-nbtc-toast{bottom:calc(82px + env(safe-area-inset-bottom));left:12px;right:12px;width:auto;max-width:none;transform:translateX(0)}
+}
+</style>
+
+
+<style id="dgchat-nbtc-overlay-fix-v0100">
+/* Correctly placed in the real document head. Wallet modals are body-level siblings
+   of #app-screen; explicit z-index is required because Tailwind did not emit
+   the arbitrary z-[55]/z-[70] utilities in this single-file build. */
+#nbtc-wallet-modal {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 55 !important;
+  background-color: rgba(0, 0, 0, .55) !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+#nbtc-wallet-modal.hidden { display: none !important; }
+#nbtc-wallet-modal:not(.hidden) { display: flex !important; }
+#nbtc-wallet-modal > div {
+  position: relative !important;
+  z-index: 1 !important;
+  width: min(100%, 32rem) !important;
+  max-height: 92vh !important;
+}
+#nbtc-send-modal {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 70 !important;
+  background-color: rgba(0, 0, 0, .60) !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+#nbtc-send-modal.hidden { display: none !important; }
+#nbtc-send-modal:not(.hidden) { display: flex !important; }
+</style>
+
+<style id="dgchat-nbtc-theme-parity-v0101">
+/* NBTC theme parity patch.
+   The bundled Tailwind v4 build does not emit several amber/red/blue utilities
+   used by the imported wallet markup. Define those states explicitly here so
+   light and dark themes never fall back to the browser's default black text. */
+
+/* Layout utilities missing from the bundled CSS. */
+#nbtc-wallet-modal .items-baseline { align-items: baseline !important; }
+#nbtc-wallet-modal .leading-4,
+#nbtc-send-modal .leading-4,
+#network-tab-content .leading-4 { line-height: 1rem !important; }
+#nbtc-wallet-modal .leading-5,
+#network-tab-content .leading-5 { line-height: 1.25rem !important; }
+#nbtc-wallet-modal .tabular-nums { font-variant-numeric: tabular-nums !important; }
+#nbtc-wallet-modal > div,
+#nbtc-send-modal > div { max-height: 92vh !important; }
+#nbtc-wallet-modal .grid.grid-cols-2,
+#nbtc-send-modal .grid.grid-cols-2,
+#network-tab-content .grid.grid-cols-2 {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+/* Improve muted copy contrast without changing the overall palette. */
+#nbtc-wallet-modal .text-gray-400,
+#nbtc-send-modal .text-gray-400,
+#network-tab-content .text-gray-400 { color: #6b7280 !important; }
+#nbtc-wallet-modal .text-gray-500,
+#nbtc-send-modal .text-gray-500,
+#network-tab-content .text-gray-500 { color: #6b7280 !important; }
+#nbtc-send-modal .nbtc-address-book-note { color: #4b5563 !important; }
+
+/* Light theme: explicit warning / sensitive-key / peer-status colors. */
+#nbtc-wallet-modal .text-amber-600,
+#network-tab-content .text-amber-800 { color: #92400e !important; }
+#nbtc-wallet-modal #nbtc-wif-value {
+  color: #b91c1c !important;
+  background-color: #fef2f2 !important;
+  border-color: #fecaca !important;
+}
+#nbtc-wallet-modal #nbtc-wif-panel .text-red-700 { color: #b91c1c !important; }
+#nbtc-send-modal #nbtc-send-preview {
+  background-color: #fffbeb !important;
+  border-color: #fde68a !important;
+}
+#nbtc-send-modal #nbtc-send-preview .text-amber-800 { color: #92400e !important; }
+#nbtc-send-modal #nbtc-send-peer-status {
+  background-color: #eff6ff !important;
+  border-color: #dbeafe !important;
+  color: #1d4ed8 !important;
+}
+#nbtc-wallet-modal #nbtc-trust-cert-network {
+  background-color: #fffbeb !important;
+  border-color: #fcd34d !important;
+  color: #92400e !important;
+}
+
+/* Dark theme overrides must be explicit because the corresponding Tailwind
+   dark utilities are absent from the single-file compiled bundle. */
+html.dark #nbtc-wallet-modal .text-gray-400,
+html.dark #nbtc-send-modal .text-gray-400,
+html.dark #network-tab-content .text-gray-400 { color: #9ca3af !important; }
+html.dark #nbtc-wallet-modal .text-gray-500,
+html.dark #nbtc-send-modal .text-gray-500,
+html.dark #network-tab-content .text-gray-500 { color: #9ca3af !important; }
+html.dark #nbtc-send-modal .nbtc-address-book-note { color: #9ca3af !important; }
+html.dark #nbtc-wallet-modal .text-amber-600 { color: #fcd34d !important; }
+html.dark #nbtc-wallet-modal #nbtc-wif-value {
+  color: #fca5a5 !important;
+  background-color: rgba(69, 10, 10, .30) !important;
+  border-color: #7f1d1d !important;
+}
+html.dark #nbtc-wallet-modal #nbtc-wif-panel .text-red-700 { color: #fca5a5 !important; }
+html.dark #nbtc-wallet-modal #nbtc-peer-panel { border-color: rgba(30, 58, 138, .65) !important; }
+html.dark #nbtc-send-modal #nbtc-send-preview {
+  background-color: rgba(69, 26, 3, .35) !important;
+  border-color: #92400e !important;
+}
+html.dark #nbtc-send-modal #nbtc-send-preview .text-amber-800 { color: #fcd34d !important; }
+html.dark #nbtc-send-modal #nbtc-send-peer-status {
+  background-color: rgba(23, 37, 84, .35) !important;
+  border-color: #1e40af !important;
+  color: #93c5fd !important;
+}
+html.dark #nbtc-wallet-modal #nbtc-trust-cert-network {
+  background-color: rgba(69, 26, 3, .35) !important;
+  border-color: #92400e !important;
+  color: #fcd34d !important;
+}
+html.dark #nbtc-wallet-modal button.text-gray-500:hover,
+html.dark #nbtc-send-modal button.text-gray-500:hover { color: #ffffff !important; }
+
+/* Keep the modal's close controls and address-book inputs legible in both themes. */
+#nbtc-send-modal .nbtc-address-book-row select {
+  color: #374151;
+  background-color: #ffffff;
+}
+html.dark #nbtc-send-modal .nbtc-address-book-row select {
+  color: #e5e7eb;
+  background-color: #1f2937;
+}
+@media (max-width: 420px) {
+  #nbtc-wallet-modal .grid.grid-cols-2,
+  #nbtc-send-modal .grid.grid-cols-2,
+  #network-tab-content .grid.grid-cols-2 { grid-template-columns: minmax(0, 1fr) !important; }
+}
+/* Values inserted dynamically into the transaction preview have no utility class. */
+#nbtc-send-modal #nbtc-send-preview strong { color: #111827 !important; }
+html.dark #nbtc-send-modal #nbtc-send-preview strong { color: #f9fafb !important; }
+#nbtc-send-modal #nbtc-preview-txid { color: #4b5563 !important; }
+html.dark #nbtc-send-modal #nbtc-preview-txid { color: #9ca3af !important; }
+</style>
+
+
+<style id="dgchat-nbtc-index-settings-theme-v0102">
+/* Connection settings now live inside the wallet modal, not the profile settings. */
+#nbtc-wallet-modal #nbtc-index-settings section {
+  background-color: #f9fafb !important;
+  border-color: #e5e7eb !important;
+}
+html.dark #nbtc-wallet-modal #nbtc-index-settings section {
+  background-color: rgba(31, 41, 55, .60) !important;
+  border-color: #374151 !important;
+}
+html.dark #nbtc-wallet-modal #nbtc-index-settings .text-gray-700,
+html.dark #nbtc-wallet-modal #nbtc-index-settings label { color: #e5e7eb !important; }
+html.dark #nbtc-wallet-modal #nbtc-index-settings .text-gray-400,
+html.dark #nbtc-wallet-modal #nbtc-index-settings .text-gray-500 { color: #9ca3af !important; }
+#nbtc-wallet-modal #nbtc-trust-cert-network {
+  background-color: #fffbeb !important;
+  border-color: #fcd34d !important;
+  color: #92400e !important;
+}
+html.dark #nbtc-wallet-modal #nbtc-trust-cert-network {
+  background-color: rgba(69, 26, 3, .35) !important;
+  border-color: #92400e !important;
+  color: #fcd34d !important;
+}
+</style>
+
+<style id="dgchat-nbtc-private-maintenance-v0104">
+/* Network maintenance stays hidden in normal wallet use. */
+#nbtc-index-settings[hidden] { display: none !important; }
+#nbtc-wallet-network[hidden] { display: none !important; }
+#nbtc-trust-cert[hidden], #nbtc-trust-cert-network[hidden] { display: none !important; }
+#nbtc-trust-cert { border: 1px solid #d7a84b; background: rgba(215,168,75,.12); color: #b7791f; border-radius: 8px; padding: 4px 8px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+html.dark #nbtc-trust-cert { color: #ffd27a; }
+</style>
+
+<style id="dgchat-nbtc-profile-address-theme">
+  .nbtc-profile-address-card { background-color: #eff6ff; border-color: #dbeafe; }
+  .nbtc-profile-address-label { color: #1d4ed8; }
+  .nbtc-profile-address-network { color: #3b82f6; }
+  .nbtc-profile-address-value { color: #374151; }
+  .nbtc-profile-address-copy { background-color: #ffffff; border-color: #bfdbfe; color: #2563eb; }
+  .nbtc-profile-address-copy:hover { background-color: #dbeafe; }
+  html.dark .nbtc-profile-address-card { background-color: rgba(30, 58, 138, .22); border-color: rgba(30, 64, 175, .55); }
+  html.dark .nbtc-profile-address-label, html.dark .nbtc-profile-address-network { color: #93c5fd; }
+  html.dark .nbtc-profile-address-value { color: #e5e7eb; }
+  html.dark .nbtc-profile-address-copy { background-color: #111827; border-color: #1e40af; color: #93c5fd; }
+  html.dark .nbtc-profile-address-copy:hover { background-color: rgba(30, 58, 138, .45); }
+</style>
+
+<style id="dgchat-nbtc-fee-selector">
+#nbtc-fee-control{border:1px solid #d1d5db;border-radius:11px;padding:10px;background:#fff;color:#374151}
+#nbtc-fee-control .nbtc-fee-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+#nbtc-fee-control .nbtc-fee-head label{font-size:12px;font-weight:600;color:#4b5563}
+#nbtc-fee-control .nbtc-fee-status{font-size:10px;color:#6b7280;text-align:right}
+#nbtc-fee-control .nbtc-fee-presets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+#nbtc-fee-control .nbtc-fee-tier{min-width:0;min-height:59px;padding:7px 4px;border:1px solid #d1d5db;border-radius:9px;background:#f9fafb;color:#374151;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer}
+#nbtc-fee-control .nbtc-fee-tier span{font-size:10px;font-weight:600;white-space:nowrap}
+#nbtc-fee-control .nbtc-fee-tier strong{font-size:14px;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums}
+#nbtc-fee-control .nbtc-fee-tier small{font-size:9px;color:#6b7280}
+#nbtc-fee-control .nbtc-fee-tier.active{border-color:#2563eb;background:#eff6ff;color:#1d4ed8;box-shadow:0 0 0 1px #2563eb inset}
+#nbtc-fee-control .nbtc-fee-tier:disabled{opacity:.42;cursor:not-allowed;box-shadow:none}
+#nbtc-fee-control .nbtc-fee-custom-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
+#nbtc-fee-control .nbtc-fee-custom-toggle,#nbtc-fee-control .nbtc-fee-refresh{border:1px solid #d1d5db;border-radius:8px;padding:6px 9px;background:#f9fafb;color:#4b5563;font-size:10px;white-space:nowrap}
+#nbtc-fee-control .nbtc-fee-current{font-size:11px;color:#6b7280;display:flex;align-items:baseline;gap:4px}
+#nbtc-fee-control .nbtc-fee-current strong{font-size:14px;color:#111827;font-variant-numeric:tabular-nums}
+#nbtc-fee-control .nbtc-fee-manual{margin-top:9px;padding-top:9px;border-top:1px solid #e5e7eb}
+#nbtc-fee-control .nbtc-fee-manual label{display:block;font-size:11px;font-weight:600;color:#4b5563;margin-bottom:5px}
+#nbtc-fee-control .nbtc-fee-manual input{width:100%;min-height:38px;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#111827;font:12px ui-monospace,monospace;box-sizing:border-box}
+#nbtc-fee-control .nbtc-fee-manual p{font-size:10px;color:#6b7280;margin-top:5px}
+.dark #nbtc-fee-control{border-color:#374151;background:#111827;color:#e5e7eb}
+.dark #nbtc-fee-control .nbtc-fee-head label{color:#d1d5db}
+.dark #nbtc-fee-control .nbtc-fee-status{color:#9ca3af}
+.dark #nbtc-fee-control .nbtc-fee-tier{border-color:#374151;background:#1f2937;color:#e5e7eb}
+.dark #nbtc-fee-control .nbtc-fee-tier small{color:#9ca3af}
+.dark #nbtc-fee-control .nbtc-fee-tier.active{border-color:#3b82f6;background:#172554;color:#bfdbfe;box-shadow:0 0 0 1px #3b82f6 inset}
+.dark #nbtc-fee-control .nbtc-fee-custom-toggle,#nbtc-fee-control .nbtc-fee-refresh{border-color:#374151;background:#1f2937;color:#d1d5db}
+.dark #nbtc-fee-control .nbtc-fee-current{color:#9ca3af}
+.dark #nbtc-fee-control .nbtc-fee-current strong{color:#f9fafb}
+.dark #nbtc-fee-control .nbtc-fee-manual{border-color:#374151}
+.dark #nbtc-fee-control .nbtc-fee-manual label{color:#d1d5db}
+.dark #nbtc-fee-control .nbtc-fee-manual input{border-color:#374151;background:#1f2937;color:#f9fafb}
+.dark #nbtc-fee-control .nbtc-fee-manual p{color:#9ca3af}
+@media(max-width:380px){#nbtc-fee-control .nbtc-fee-tier{min-height:55px}#nbtc-fee-control .nbtc-fee-tier span{font-size:9px}}
+</style>
+
 </head>
 
 <body class="bg-gray-100 dark:bg-gray-950 h-screen-dvh w-screen overflow-hidden flex items-center justify-center font-sans relative">
@@ -10855,7 +11119,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
   <div id="login-screen" class="w-full h-full md:h-auto md:max-w-md bg-white dark:bg-gray-900 md:rounded-xl shadow-lg p-6 md:p-8 flex flex-col justify-center hidden z-50">
     <div class="max-w-sm w-full mx-auto" id="account-list-area">
       <h2 class="text-3xl font-bold text-center text-gray-800 dark:text-gray-100 mb-1">DGCHAT 🔐</h2>
-      <div class="text-center text-xs text-blue-500 font-mono mb-6 font-bold tracking-widest">v0.1.93</div>
+      <div class="text-center text-xs text-blue-500 font-mono mb-6 font-bold tracking-widest">v0.1.113</div>
       <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 text-center">选择账号登录</p>
 
       <div id="saved-accounts-list" class="space-y-3 mb-6 max-h-60 overflow-y-auto no-scrollbar">
@@ -10933,11 +11197,12 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
           <div id="my-avatar" class="w-11 h-11 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold overflow-hidden shadow shrink-0">我</div>
           <div class="min-w-0 pr-2">
             <div id="my-name" class="font-semibold text-gray-800 dark:text-gray-100 text-base truncate">加载中...</div>
-            <div class="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            <div class="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-0.5 min-w-0">
               <span id="relay-status" class="w-2 h-2 rounded-full bg-red-500 mr-1.5 shadow-sm shrink-0"></span>
               <span id="current-relay-display" class="truncate">Relay</span>
               <a href="#" id="sidebar-trust-link" target="_blank" class="hidden ml-2 px-1.5 py-0.5 bg-red-50 text-red-500 border border-red-200 rounded text-[10px] hover:bg-red-100 transition whitespace-nowrap shadow-sm">信任证书</a>
             </div>
+            <button id="my-nbtc-balance" type="button" onclick="return window.dgchatNbtcOpenClick(event, false)" class="block mt-0.5 text-[10px] leading-4 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 truncate text-left" title="打开 NextBTC 钱包">余额：正在获取…</button>
           </div>
         </div>
         <div class="flex space-x-1.5 shrink-0 items-center">
@@ -11057,7 +11322,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
             </svg>
           </button>
         </div>
-        <div id="image-preview-area" class="hidden mb-3 relative inline-block">
+        <div id="image-preview-area" class="hidden mb-3 relative">
           <img id="image-preview-img" class="h-20 md:h-24 rounded-lg border border-gray-200 dark:border-gray-700 object-cover shadow-sm">
           <button onclick="clearPendingImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 shadow-sm">&times;</button>
         </div>
@@ -11083,6 +11348,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
           </button>
           <input type="file" id="camera-upload" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelect(event)">
 
+          <button id="nbtc-chat-button" type="button" onclick="return window.dgchatNbtcOpenClick(event)" aria-label="打开 NBTC 钱包与转账" title="NextBTC 转账与往来记录" class="hidden relative z-20 pointer-events-auto cursor-pointer shrink-0 mb-0.5 px-2 py-2 text-[10px] font-bold tracking-wide text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition">NBTC</button>
           <textarea id="msg-input" rows="1" placeholder="输入消息..." class="dark:bg-gray-800 dark:text-white dark:border-gray-600 flex-1 border border-gray-300 dark:border-gray-600 rounded-xl py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm resize-none text-base max-h-32 no-scrollbar" oninput="handleChatInput(this)" onkeypress="handleEnter(event)"></textarea>
           <button onclick="sendMessage()" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 shadow-sm font-medium active:scale-95 h-[46px]">发送</button>
         </div>
@@ -11146,6 +11412,16 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
           </div>
         </div>
 
+        <div id="peer-modal-nbtc-container" class="hidden w-full nbtc-profile-address-card rounded-lg p-3 border mb-4 shrink-0">
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-[11px] font-semibold nbtc-profile-address-label">NBTC 收款地址</label>
+            <span class="text-[10px] nbtc-profile-address-network">NextBTC</span>
+          </div>
+          <div id="peer-modal-nbtc-address" class="text-xs nbtc-profile-address-value font-mono break-all select-all leading-relaxed"></div>
+          <div class="flex justify-end mt-2">
+            <button type="button" onclick="copyPeerNbtcAddress()" class="px-3 py-1.5 rounded-lg nbtc-profile-address-copy text-xs border">复制地址</button>
+          </div>
+        </div>
 
         <div id="peer-extra-info" class="w-full space-y-3 mb-5 hidden shrink-0">
           <div id="peer-modal-about-container" class="hidden">
@@ -11223,6 +11499,209 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
   </div>
 
 
+  <div id="nbtc-wallet-modal" class="fixed inset-0 bg-black bg-opacity-55 hidden z-[55] p-3 md:p-4 flex items-center justify-center" onclick="if(event.target===this)closeNbtcWalletModal()">
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[92vh] overflow-hidden">
+      <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50 dark:bg-gray-800 shrink-0">
+        <div class="min-w-0">
+          <h3 id="nbtc-wallet-title" class="text-base font-bold text-gray-800 dark:text-gray-100 select-none" onclick="if(!nbtcWalletPeerPk) nbtcHandleMaintenanceTap()">NextBTC 钱包</h3>
+          <p id="nbtc-wallet-subtitle" class="text-[10px] text-gray-400 mt-0.5">DGChat 内置钱包 · NBTC</p>
+        </div>
+        <button type="button" onclick="closeNbtcWalletModal()" class="p-2 text-gray-500 hover:text-gray-800 dark:hover:text-white" aria-label="关闭">✕</button>
+      </div>
+      <div class="p-4 overflow-y-auto space-y-3">
+        <div class="rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-3">
+          <div class="flex items-center justify-between">
+            <span id="nbtc-wallet-balance-label" class="text-[11px] text-gray-500 dark:text-gray-400">链上余额</span>
+            <div class="flex items-center gap-2 min-w-0">
+              <span id="nbtc-wallet-network" class="text-[10px] text-gray-400" hidden></span>
+              <button id="nbtc-trust-cert" type="button" hidden aria-label="打开证书信任页面">信任证书</button>
+            </div>
+          </div>
+          <div class="mt-1 flex items-baseline gap-2">
+            <strong id="nbtc-wallet-balance" class="text-2xl font-semibold text-gray-800 dark:text-gray-100 tabular-nums">--</strong>
+            <span class="text-xs text-gray-500">NBTC</span>
+          </div>
+          <div id="nbtc-wallet-pending" class="text-[10px] text-gray-400 mt-1">待确认收入：-- NBTC · 待确认支出：-- NBTC</div>
+          <div id="nbtc-wallet-status" class="text-[10px] text-gray-400 mt-1" role="status">正在获取最新余额…</div>
+        </div>
+
+        <div id="nbtc-own-receive-card" class="border border-gray-100 dark:border-gray-700 rounded-xl p-3 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-gray-700 dark:text-gray-200">我的收款地址</span>
+            <span class="text-[10px] text-gray-400">NextBTC 主网 · bc1q</span>
+          </div>
+          <div id="nbtc-wallet-address" class="font-mono text-[11px] leading-5 break-all text-gray-600 dark:text-gray-300 select-all">正在生成…</div>
+          <p class="text-[10px] leading-4 text-amber-600 dark:text-amber-400">此地址仅用于 NextBTC 网络（NBTC），不要向 Bitcoin 主网转账。</p>
+          <div class="flex gap-2">
+            <button type="button" onclick="copyNbtcWalletAddress()" class="flex-1 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-xs hover:bg-gray-200 dark:hover:bg-gray-700">复制地址</button>
+            <button type="button" onclick="showNbtcReceiveQr()" class="flex-1 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-xs hover:bg-gray-200 dark:hover:bg-gray-700">收款二维码</button>
+          </div>
+        </div>
+
+        <div id="nbtc-peer-panel" hidden class="border border-blue-100 dark:border-blue-900/60 rounded-xl p-3 space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <div class="text-sm font-semibold text-gray-800 dark:text-gray-100">与 <span id="nbtc-peer-name">联系人</span> 的 NBTC 往来</div>
+            <span class="text-[10px] text-gray-400">联系人支付</span>
+          </div>
+          <div id="nbtc-peer-address-status" class="text-[11px] text-gray-500 dark:text-gray-400">正在读取对方的个人资料…</div>
+          <div id="nbtc-peer-address-card" hidden class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-3 space-y-2">
+            <div class="text-[11px] font-semibold text-gray-600 dark:text-gray-300">对方的 NBTC 收款地址</div>
+            <div id="nbtc-peer-address-value" class="font-mono text-[11px] leading-5 break-all text-gray-700 dark:text-gray-200 select-all"></div>
+            <div class="flex justify-end">
+              <button type="button" onclick="copyNbtcPeerAddress()" class="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-300">复制地址</button>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button type="button" onclick="openNbtcSendModal(nbtcWalletPeerPk)" class="flex-1 py-2.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700">转账给此联系人</button>
+            <button type="button" onclick="refreshNbtcPeerProfile(nbtcWalletPeerPk)" class="px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-300">刷新资料</button>
+          </div>
+        </div>
+
+        <div id="nbtc-owner-action-row" class="flex gap-2">
+          <button type="button" onclick="openNbtcSendModal(null)" class="flex-1 py-2.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700">转账</button>
+          <button type="button" onclick="refreshNbtcWallet(true)" class="px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">刷新</button>
+        </div>
+
+        <div id="nbtc-history-section" class="border-t border-gray-100 dark:border-gray-800 pt-3">
+          <div class="flex items-center justify-between mb-2">
+            <div>
+              <div class="text-xs font-semibold text-gray-700 dark:text-gray-200" id="nbtc-history-title">最近交易</div>
+              <div class="text-[10px] text-gray-400 mt-0.5" id="nbtc-history-caption">最近的收付款记录</div>
+            </div>
+            <button type="button" onclick="refreshNbtcHistory(true)" class="text-[11px] text-blue-600 dark:text-blue-400">查询</button>
+          </div>
+          <div id="nbtc-history-list" class="space-y-2">
+            <div class="text-xs text-gray-400 py-3 text-center">尚无交易记录</div>
+          </div>
+          <div id="nbtc-tx-detail" class="hidden mt-3 rounded-lg bg-gray-50 dark:bg-gray-800 p-3 space-y-1 text-[11px] break-all">
+            <div class="flex items-center justify-between"><strong class="text-gray-700 dark:text-gray-200">交易详情</strong><button type="button" onclick="document.getElementById('nbtc-tx-detail').classList.add('hidden')" class="text-gray-400">收起</button></div>
+            <div id="nbtc-tx-detail-body" class="text-gray-500 dark:text-gray-400"></div>
+          </div>
+        </div>
+
+        <details id="nbtc-private-key-section" class="border-t border-gray-100 dark:border-gray-800 pt-3">
+          <summary class="cursor-pointer text-xs text-gray-500 dark:text-gray-400">私钥管理</summary>
+          <div class="pt-3 space-y-3">
+            
+            <div class="border-t border-gray-100 dark:border-gray-700 pt-3">
+              <div class="flex items-center justify-between gap-2">
+                <div>
+                  <div class="text-xs font-semibold text-gray-700 dark:text-gray-200">NBTC 私钥（WIF）</div>
+                  
+                </div>
+                <button type="button" onclick="actionWithPasswordVerification('showNbtcWif')" class="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-[11px] text-gray-600 dark:text-gray-300">验证并查看</button>
+              </div>
+              <div id="nbtc-wif-panel" class="hidden mt-2 space-y-2">
+                <textarea id="nbtc-wif-value" readonly rows="2" class="w-full resize-none border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/20 rounded-lg p-2 font-mono text-[11px] text-red-700 dark:text-red-300 break-all"></textarea>
+                <div class="flex gap-2">
+                  <button type="button" onclick="copyNbtcWif()" class="flex-1 py-2 rounded-lg bg-red-600 text-white text-xs">复制 WIF</button>
+                  <button type="button" onclick="downloadNbtcWif()" class="flex-1 py-2 rounded-lg border border-red-200 dark:border-red-900 text-red-600 dark:text-red-300 text-xs">导出 TXT</button>
+                </div>
+                <p class="text-[10px] text-red-500">此私钥可以控制你的 NBTC 资产，请勿发送给他人。仅导入支持 NextBTC 网络的钱包；关闭窗口或 60 秒后会自动隐藏。</p>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details id="nbtc-index-settings" hidden class="border-t border-gray-100 dark:border-gray-800 pt-3">
+          <summary class="cursor-pointer text-xs text-gray-500 dark:text-gray-400">高级维护</summary>
+          <div class="pt-3 space-y-3">
+            <section class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-3 space-y-3">
+              <div class="flex items-center justify-between gap-2">
+                <div class="text-xs font-semibold text-gray-700 dark:text-gray-200">连接服务</div>
+                <span id="nbtc-network-connection-state" class="text-[10px] text-gray-400"></span>
+              </div>
+              <div>
+                <label for="nbtc-api-url-network" class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">服务地址</label>
+                <input id="nbtc-api-url-network" type="url" spellcheck="false" autocomplete="url" class="w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-lg px-3 py-2.5 text-xs font-mono text-gray-700 dark:text-gray-200" value="https://47.103.211.197:8777">
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="saveNbtcApiSetting()" class="py-2.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-xs font-semibold text-gray-700 dark:text-gray-200">保存</button>
+                <button type="button" onclick="testNbtcApiSetting()" class="py-2.5 rounded-lg bg-blue-600 text-xs font-semibold text-white">检查连接</button>
+              </div>
+              <button id="nbtc-trust-cert-network" type="button" hidden class="w-full py-2.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300 text-xs font-semibold">打开证书页面</button>
+              <div id="nbtc-network-test-result" class="text-[11px] text-gray-500 dark:text-gray-400" role="status"></div>
+            </section>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <div id="nbtc-send-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-[70] p-3 md:p-4 flex items-center justify-center" onclick="if(event.target===this)closeNbtcSendModal()">
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[92vh] overflow-hidden">
+      <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50 dark:bg-gray-800 shrink-0">
+        <div><h3 class="text-base font-bold text-gray-800 dark:text-gray-100">发送 NBTC</h3><p class="text-[10px] text-gray-400 mt-0.5">请核对收款地址与金额后再发送</p></div>
+        <button type="button" onclick="closeNbtcSendModal()" class="p-2 text-gray-500 hover:text-gray-800 dark:hover:text-white">✕</button>
+      </div>
+      <div class="p-4 overflow-y-auto space-y-3">
+        <div id="nbtc-send-peer-status" class="hidden rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 p-2 text-[11px] text-blue-700 dark:text-blue-300"></div>
+        <div>
+          <label for="nbtc-send-address" class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">收款地址</label>
+          <input id="nbtc-send-address" type="text" autocomplete="off" spellcheck="false" placeholder="粘贴 NextBTC 收款地址（bc1q…）" class="w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg px-3 py-2.5 text-xs font-mono text-gray-700 dark:text-gray-200">
+          <div class="nbtc-address-book-row" id="nbtc-address-book-row">
+            <select id="nbtc-recipient-book" aria-label="常用收款地址"><option value="">常用收款地址</option></select>
+            <button id="nbtc-show-save-recipient" type="button" class="border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-[11px]">＋ 保存</button>
+          </div>
+          <div id="nbtc-recipient-editor" class="nbtc-address-book-editor" hidden>
+            <input id="nbtc-recipient-label" type="text" maxlength="32" autocomplete="off" placeholder="输入标签，例如：朋友、交易所" class="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg text-gray-700 dark:text-gray-200">
+            <button id="nbtc-save-recipient" type="button" class="bg-blue-600 text-white rounded-lg">保存地址</button>
+            <button id="nbtc-cancel-save-recipient" type="button" class="border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 rounded-lg">取消</button>
+          </div>
+          <p class="nbtc-address-book-note">常用地址保存在此浏览器中，更换设备后需要重新添加。</p>
+        </div>
+        <div>
+          <label for="nbtc-send-amount" class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">金额（NBTC）</label>
+          <input id="nbtc-send-amount" type="text" inputmode="decimal" placeholder="0.00000000" class="w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg px-3 py-2.5 text-sm font-mono text-gray-700 dark:text-gray-200">
+        </div>
+        <div id="nbtc-fee-control" class="nbtc-fee-control">
+          <div class="nbtc-fee-head">
+            <label>矿工手续费率</label>
+            <span id="nbtc-fee-estimate-status" class="nbtc-fee-status" role="status">正在获取手续费建议…</span>
+          </div>
+          <div class="nbtc-fee-presets" role="group" aria-label="手续费档位">
+            <button type="button" class="nbtc-fee-tier" data-nbtc-fee-tier="low" disabled aria-pressed="false">
+              <span>低 · 经济</span><strong id="nbtc-fee-low-value">—</strong><small>sat/vB</small>
+            </button>
+            <button type="button" class="nbtc-fee-tier active" data-nbtc-fee-tier="medium" data-rate="2" aria-pressed="true">
+              <span>中 · 推荐</span><strong id="nbtc-fee-medium-value">2</strong><small>sat/vB</small>
+            </button>
+            <button type="button" class="nbtc-fee-tier" data-nbtc-fee-tier="high" disabled aria-pressed="false">
+              <span>高 · 优先</span><strong id="nbtc-fee-high-value">—</strong><small>sat/vB</small>
+            </button>
+          </div>
+          <div class="nbtc-fee-custom-row">
+            <button id="nbtc-fee-custom-toggle" type="button" class="nbtc-fee-custom-toggle">自定义手续费</button>
+            <div class="nbtc-fee-current"><strong id="nbtc-fee-current-rate">2</strong><span>sat/vB</span></div>
+            <button id="nbtc-fee-refresh" type="button" class="nbtc-fee-refresh" title="刷新手续费建议" aria-label="刷新手续费建议">↻</button>
+          </div>
+          <div id="nbtc-fee-manual" class="nbtc-fee-manual" hidden>
+            <label for="nbtc-send-fee-custom">自定义费率（sat/vB）</label>
+            <input id="nbtc-send-fee-custom" type="number" min="1" max="1000" step="0.01" inputmode="decimal" placeholder="输入 1–1000">
+            <p>自定义费率仅用于本次转账。</p>
+          </div>
+          <input id="nbtc-send-fee" type="hidden" value="2">
+        </div>
+        <p class="text-[10px] leading-4 text-gray-400">请确认收款地址属于 NextBTC 网络。NextBTC 与 Bitcoin 主网地址外观可能相同，错误网络转账无法撤销。</p>
+        <button id="nbtc-preview-button" type="button" onclick="previewNbtcTransfer()" class="w-full py-2.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700">预览转账</button>
+        <div id="nbtc-send-status" class="text-[11px] text-gray-500 dark:text-gray-400" role="status"></div>
+        <div id="nbtc-send-preview" class="hidden rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20 p-3 space-y-2">
+          <div class="text-xs font-bold text-amber-800 dark:text-amber-300">请核对交易信息</div>
+          <div class="text-[11px] text-gray-600 dark:text-gray-300 break-all">收款地址：<span id="nbtc-preview-address" class="font-mono"></span></div>
+          <div class="flex justify-between text-xs"><span class="text-gray-500">转账金额</span><strong id="nbtc-preview-amount"></strong></div>
+          <div class="flex justify-between text-xs"><span class="text-gray-500">手续费率</span><strong id="nbtc-preview-fee-rate"></strong></div>
+          <div class="flex justify-between text-xs"><span class="text-gray-500">矿工手续费</span><strong id="nbtc-preview-fee"></strong></div>
+          <div class="flex justify-between text-xs"><span class="text-gray-500">预计总支出</span><strong id="nbtc-preview-total"></strong></div>
+          <div class="text-[10px] text-gray-500 break-all">交易编号：<span id="nbtc-preview-txid" class="font-mono"></span></div>
+          <div class="flex gap-2 pt-1">
+            <button type="button" onclick="cancelNbtcPreview()" class="flex-1 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-300">返回修改</button>
+            <button id="nbtc-broadcast-button" type="button" onclick="broadcastNbtcTransfer()" class="flex-1 py-2 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700">确认并发送</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="profile-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-40 p-4 flex items-center justify-center">
     <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]">
       <div class="p-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800 shrink-0 rounded-t-2xl">
@@ -11238,6 +11717,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
       <div class="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 shrink-0 pt-1 px-2">
         <button id="tab-btn-profile" onclick="switchProfileTab('profile')" class="flex-1 py-2.5 text-sm font-bold border-b-2 border-blue-500 text-blue-600 transition">👤 个人资料</button>
         <button id="tab-btn-privacy" onclick="switchProfileTab('privacy')" class="flex-1 py-2.5 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition">🛡️ 隐私与系统</button>
+        <button id="tab-btn-network" onclick="switchProfileTab('network')" class="flex-1 py-2.5 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition">🌐 Relay 节点</button>
       </div>
 
       <div class="p-5 flex-1 overflow-y-auto no-scrollbar relative">
@@ -11343,7 +11823,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
 
           <div class="space-y-2 pt-2">
             <div class="flex space-x-2">
-              <button onclick="openRelayManager()" class="flex-1 bg-gray-100 dark:bg-gray-950 text-gray-700 dark:text-gray-200 py-2 rounded-lg text-xs font-medium hover:bg-gray-200 transition border border-gray-200 dark:border-gray-700 flex items-center justify-center active:scale-95">多节点与网络</button>
+              
               <button onclick="forceIncrementalUploadToCloud(this)" class="flex-1 bg-indigo-50 text-indigo-600 py-2 rounded-lg text-xs font-medium hover:bg-indigo-100 transition border border-indigo-200 flex items-center justify-center active:scale-95">增量云端备份</button>
               <button onclick="openBlocklistManager()" class="flex-1 bg-red-50 text-red-500 py-2 rounded-lg text-xs font-medium hover:bg-red-100 transition border border-red-100 flex items-center justify-center active:scale-95">🚫 黑名单</button>
             </div>
@@ -11362,6 +11842,13 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
               🔑 修改本地登录密码
             </button>
           </div>
+        </div>
+        <div id="network-tab-content" class="space-y-4 hidden">
+          <section class="rounded-xl border border-gray-200 dark:border-gray-700 p-3 space-y-2">
+            <div class="text-xs font-semibold text-gray-700 dark:text-gray-200">Nostr Relay 网络</div>
+            
+            <button type="button" onclick="openRelayManager()" class="w-full py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-700 dark:text-gray-200">管理 Relay 节点</button>
+          </section>
         </div>
       </div>
 
@@ -11762,7 +12249,215 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
   </div>
 
 
-  <script>
+  
+<script data-dgchat-nbtc-core="address-crypto">
+
+
+/* nextBTC WIF / address module. Private keys remain local; transaction signing is implemented below. */
+'use strict';
+const NextCrypto=(()=>{
+const ALPHABET='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+const P=(1n<<256n)-(1n<<32n)-977n, N=BigInt('0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141'),
+GX=BigInt('0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798'),
+GY=BigInt('0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8');
+const mod=(a,p=P)=>(a%p+p)%p;
+function modPow(a,n,p=P){let b=1n;while(n>0n){if(n&1n)b=b*a%p;a=a*a%p;n>>=1n;}return b;}
+function addPt(a,b){if(!a)return b;if(!b)return a;if(a.x===b.x&&mod(a.y+b.y)===0n)return null;
+let s=a.x===b.x?mod((3n*a.x*a.x)*modPow(2n*a.y,P-2n)):mod((b.y-a.y)*modPow(b.x-a.x,P-2n));
+let x=mod(s*s-a.x-b.x),y=mod(s*(a.x-x)-a.y);return {x,y};}
+function mulPt(k){let q=null,p={x:GX,y:GY};while(k){if(k&1n)q=addPt(q,p);p=addPt(p,p);k>>=1n;}return q;}
+const concat=(...parts)=>{let len=parts.reduce((s,p)=>s+p.length,0),out=new Uint8Array(len),i=0;for(let p of parts){out.set(p,i);i+=p.length;}return out;};
+const bigintBytes=(v,n)=>{let a=new Uint8Array(n);for(let i=n-1;i>=0;i--){a[i]=Number(v&255n);v>>=8n;}return a;};
+async function sha256(bytes){return new Uint8Array(await crypto.subtle.digest('SHA-256',bytes));}
+async function hash256(bytes){return sha256(await sha256(bytes));}
+function b58decode(str){let n=0n;for(let c of str){let idx=ALPHABET.indexOf(c);if(idx<0)throw Error('WIF 包含非法 Base58 字符');n=n*58n+BigInt(idx);}
+let b=[];while(n){b.push(Number(n&255n));n>>=8n;}b.reverse();let zero=0;while(str[zero]==='1')zero++;return concat(new Uint8Array(zero),new Uint8Array(b));}
+function b58encode(bytes){let n=0n;for(let b of bytes)n=(n<<8n)+BigInt(b);let s='';while(n){s=ALPHABET[Number(n%58n)]+s;n/=58n;}for(let b of bytes){if(b!==0)break;s='1'+s;}return s;}
+async function checksumEncode(bytes){let h=await hash256(bytes);return b58encode(concat(bytes,h.slice(0,4)));}
+const EQ=(a,b)=>a.length===b.length&&a.every((x,i)=>x===b[i]);
+async function importWIF(wif){let buf=b58decode(wif.trim());if(buf.length!==37&&buf.length!==38)throw Error('WIF 长度错误');
+let h=await hash256(buf.slice(0,-4));if(!EQ(h.slice(0,4),buf.slice(-4)))throw Error('WIF 校验和错误');
+if(buf[0]!==128)throw Error('仅支持 nextBTC 主网 WIF（版本 128）');
+let compressed=buf.length===38;if(compressed&&buf[33]!==1)throw Error('WIF 压缩标志错误');
+let scalar=BigInt('0x'+Array.from(buf.slice(1,33)).map(x=>x.toString(16).padStart(2,'0')).join(''));
+if(scalar===0n||scalar>=N)throw Error('无效的 secp256k1 私钥');
+return {scalar,compressed,privateBytes:buf.slice(1,33)};}
+// RIPEMD-160 reference rounds; 32-bit operations, no external dependency.
+const RL=[
+0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+7,4,13,1,10,6,15,3,12,0,9,5,2,14,11,8,
+3,10,14,4,9,15,8,1,2,7,0,6,13,11,5,12,
+1,9,11,10,0,8,12,4,13,3,7,15,14,5,6,2,
+4,0,5,9,7,12,2,10,14,1,3,8,11,6,15,13];
+const r2=[
+5,14,7,0,9,2,11,4,13,6,15,8,1,10,3,12,
+6,11,3,7,0,13,5,10,14,15,8,12,4,9,1,2,
+15,5,1,3,7,14,6,9,11,8,12,2,10,0,4,13,
+8,6,4,1,3,11,15,0,5,12,2,13,9,7,10,14,
+12,15,10,4,1,5,8,7,6,2,13,14,0,3,9,11];
+const s1=[11,14,15,12,5,8,7,9,11,13,14,15,6,7,9,8,7,6,8,13,11,9,7,15,7,12,15,9,11,7,13,12,11,13,6,7,14,9,13,15,14,8,13,6,5,12,7,5,11,12,14,15,14,15,9,8,9,14,5,6,8,6,5,12,9,15,5,11,6,8,13,12,5,12,13,14,11,8,5,6];
+const s2=[8,9,9,11,13,15,15,5,7,7,8,11,14,14,12,6,9,13,15,7,12,8,9,11,7,7,12,7,6,15,13,11,9,7,15,11,8,6,6,14,12,13,5,14,13,13,7,5,15,5,8,11,14,14,6,14,6,9,12,9,12,5,15,8,8,5,12,9,12,5,14,6,8,13,6,5,15,13,11,11];
+function rol(x,n){return (x<<n)|(x>>>(32-n));}
+function f(j,x,y,z){if(j<16)return x^y^z;if(j<32)return (x&y)|(~x&z);if(j<48)return(x|~y)^z;if(j<64)return(x&z)|(y&~z);return x^(y|~z);}
+const KL=[0x00000000,0x5a827999,0x6ed9eba1,0x8f1bbcdc,0xa953fd4e],KR=[0x50a28be6,0x5c4dd124,0x6d703ef3,0x7a6d76e9,0x00000000];
+function ripemd160(input){const mlen=input.length, padded=new Uint8Array((Math.ceil((mlen+9)/64))*64);padded.set(input);padded[mlen]=0x80;let bits=BigInt(mlen)*8n;for(let i=0;i<8;i++)padded[padded.length-8+i]=Number((bits>>BigInt(8*i))&255n);
+let H=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0];
+for(let pos=0;pos<padded.length;pos+=64){let x=[];for(let i=0;i<16;i++){let j=pos+4*i;x.push((padded[j]|padded[j+1]<<8|padded[j+2]<<16|padded[j+3]<<24)>>>0);}
+let [a,b,c,d,e]=H,[aa,bb,cc,dd,ee]=H;
+for(let j=0;j<80;j++){let t=(rol((a+f(j,b,c,d)+x[RL[j]]+KL[Math.floor(j/16)])|0,s1[j])+e)|0;a=e;e=d;d=rol(c,10);c=b;b=t;
+let u=(rol((aa+f(79-j,bb,cc,dd)+x[r2[j]]+KR[Math.floor(j/16)])|0,s2[j])+ee)|0;aa=ee;ee=dd;dd=rol(cc,10);cc=bb;bb=u;}
+let t=(H[1]+c+dd)|0;H[1]=(H[2]+d+ee)|0;H[2]=(H[3]+e+aa)|0;H[3]=(H[4]+a+bb)|0;H[4]=(H[0]+b+cc)|0;H[0]=t;
+}let out=new Uint8Array(20);for(let i=0;i<5;i++)for(let j=0;j<4;j++)out[i*4+j]=(H[i]>>>(8*j))&255;return out;}
+async function hash160(bytes){return ripemd160(await sha256(bytes));}
+const BECH='qpzry9x8gf2tvdw0s3jn54khce6mua7l';
+function bitsConvert(data,from,to,pad){let acc=0,bits=0,out=[],max=(1<<to)-1;for(let v of data){if(v<0||v>>from)throw Error('Bad bit conversion');acc=(acc<<from)|v;bits+=from;while(bits>=to){bits-=to;out.push((acc>>bits)&max);}}if(pad&&bits)out.push((acc<<(to-bits))&max);else if(!pad&&(bits>=from||((acc<<(to-bits))&max)))throw Error('Bad padding');return out;}
+function polymod(vals){let chk=1;for(let v of vals){let top=chk>>>25;chk=((chk&0x1ffffff)<<5)^v;for(let i=0;i<5;i++)if((top>>>i)&1)chk^=[0x3b6a57b2,0x26508e6d,0x1ea119fa,0x3d4233dd,0x2a1462b3][i];}return chk;}
+function bech32(hrp,witver,bytes){let d=[witver,...bitsConvert(bytes,8,5,true)],v=[...hrp.split('').map(c=>c.charCodeAt(0)>>5),0,...hrp.split('').map(c=>c.charCodeAt(0)&31),...d,0,0,0,0,0,0];let p=polymod(v)^1;for(let i=0;i<6;i++)d.push((p>>>(5*(5-i)))&31);return hrp+'1'+d.map(x=>BECH[x]).join('');}
+async function derive(wif){let {scalar,compressed}=await importWIF(wif);let pt=mulPt(scalar);
+const compressedPub=concat(new Uint8Array([pt.y%2n===0n?2:3]),bigintBytes(pt.x,32)),uncompressedPub=concat(new Uint8Array([4]),bigintBytes(pt.x,32),bigintBytes(pt.y,32));
+let legacy=await hash160(compressed?compressedPub:uncompressedPub),seg=await hash160(compressedPub),redeem=concat(new Uint8Array([0,20]),seg),p2sh=await hash160(redeem);
+return {compressed,legacy:await checksumEncode(concat(new Uint8Array([0]),legacy)),nested:await checksumEncode(concat(new Uint8Array([5]),p2sh)),native:bech32('bc',0,seg)};}
+async function generateWIF(){
+ let key;
+ do{key=crypto.getRandomValues(new Uint8Array(32));}while(BigInt('0x'+Array.from(key).map(x=>x.toString(16).padStart(2,'0')).join(''))===0n||BigInt('0x'+Array.from(key).map(x=>x.toString(16).padStart(2,'0')).join(''))>=N);
+ return checksumEncode(concat(new Uint8Array([128]),key,new Uint8Array([1])));
+}
+async function validateAddress(address){
+ const v=String(address||'').trim();if(!v)throw Error('请输入 nextBTC 地址');
+ if(typeof NextTx!=='undefined'&&NextTx.scriptFor){await NextTx.scriptFor(v);return v;}
+ if(/^bc1/i.test(v)){if(v!==v.toLowerCase()&&v!==v.toUpperCase())throw Error('Bech32 地址大小写错误');if(!v.toLowerCase().startsWith('bc1q'))throw Error('仅支持 nextBTC 原生 SegWit 地址');return v;}
+ const b=b58decode(v);if(b.length!==25)throw Error('地址长度错误');const h=await hash256(b.slice(0,21));if(!EQ(h.slice(0,4),b.slice(21)))throw Error('地址校验和错误');if(b[0]!==0&&b[0]!==5)throw Error('不是 nextBTC 主网地址');return v;
+}
+return {importWIF,derive,ripemd160,hash160,checksumEncode,generateWIF,validateAddress};
+})();
+globalThis.NextCrypto=NextCrypto;
+
+
+
+</script>
+<script data-dgchat-nbtc-core="transaction-engine">
+
+
+/* nextBTC transaction engine: P2PKH, P2SH-P2WPKH, P2WPKH only.
+   Uses SHA256 WebCrypto and deterministic ECDSA (RFC6979). No external scripts. */
+'use strict';
+const NextTx=(()=>{
+const C=NextCrypto;
+const N=BigInt('0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141');
+const P=(1n<<256n)-(1n<<32n)-977n;
+const GX=BigInt('0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798'),GY=BigInt('0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8');
+const B58='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+const BECH='qpzry9x8gf2tvdw0s3jn54khce6mua7l';
+const enc=new TextEncoder();
+const cat=(...parts)=>{const o=new Uint8Array(parts.reduce((s,x)=>s+x.length,0));let j=0;for(const p of parts){o.set(p,j);j+=p.length;}return o;};
+const hex=b=>Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');
+function unhex(s){if(!/^(?:[0-9a-f]{2})*$/i.test(s))throw Error('Invalid hex');return Uint8Array.from(s.match(/../g)||[],x=>parseInt(x,16));}
+function intBytes(n,l,le=false){n=BigInt(n);if(n<0n||n>=1n<<BigInt(8*l))throw Error('Integer overflow');let b=new Uint8Array(l);for(let i=0;i<l;i++){b[le?i:l-1-i]=Number(n&255n);n>>=8n;}return b;}
+function intFrom(b){let x=0n;for(const v of b)x=x*256n+BigInt(v);return x;}
+const reverse=b=>Uint8Array.from(b).reverse();
+const sha=async b=>new Uint8Array(await crypto.subtle.digest('SHA-256',b));
+const dsha=async b=>sha(await sha(b));
+const h160=async b=>C.hash160(b);
+const eq=(a,b)=>a.length===b.length&&a.every((x,i)=>x===b[i]);
+function varint(n){n=BigInt(n);if(n<253n)return intBytes(n,1);if(n<=65535n)return cat(Uint8Array.of(253),intBytes(n,2,true));if(n<=0xffffffffn)return cat(Uint8Array.of(254),intBytes(n,4,true));return cat(Uint8Array.of(255),intBytes(n,8,true));}
+const push=b=>b.length<=75?cat(Uint8Array.of(b.length),b):b.length<=255?cat(Uint8Array.of(76,b.length),b):(()=>{throw Error('Push too long');})();
+const mod=(n,m)=>(n%m+m)%m;
+function inv(a,m){let [b,x,y]=[m,1n,0n];a=mod(a,m);while(b){let q=a/b;[a,b]=[b,a-q*b];[x,y]=[y,x-q*y];}if(a!==1n)throw Error('Invalid inverse');return mod(x,m);}
+function add(a,b){if(!a)return b;if(!b)return a;if(a.x===b.x&&mod(a.y+b.y,P)===0n)return null;let slope=a.x===b.x?mod(3n*a.x*a.x*inv(2n*a.y,P),P):mod((b.y-a.y)*inv(b.x-a.x,P),P);let x=mod(slope*slope-a.x-b.x,P);return {x,y:mod(slope*(a.x-x)-a.y,P)};}
+function multiply(k){let p={x:GX,y:GY},r=null;while(k){if(k&1n)r=add(r,p);p=add(p,p);k>>=1n;}return r;}
+async function hmac(key,data){const k=await crypto.subtle.importKey('raw',key,{name:'HMAC',hash:'SHA-256'},false,['sign']);return new Uint8Array(await crypto.subtle.sign('HMAC',k,data));}
+function derNum(b){let a=Array.from(b);while(a.length>1&&a[0]===0)a.shift();if(a[0]&128)a.unshift(0);return Uint8Array.from([2,a.length,...a]);}
+async function sign(hash,privateBytes){const d=intFrom(privateBytes),z=intFrom(hash);if(d<=0n||d>=N)throw Error('Invalid signing key');
+  // RFC6979, SHA256, deterministic nonce and low-S normalization.
+  let V=new Uint8Array(32).fill(1),K=new Uint8Array(32),seed=cat(privateBytes,hash);
+  K=await hmac(K,cat(V,Uint8Array.of(0),seed));V=await hmac(K,V);
+  K=await hmac(K,cat(V,Uint8Array.of(1),seed));V=await hmac(K,V);
+  for(;;){V=await hmac(K,V);let k=intFrom(V);if(k>0n&&k<N){const pt=multiply(k);const r=mod(pt.x,N);if(r){let s=mod(inv(k,N)*(z+r*d),N);if(s){if(s>N/2n)s=N-s;const rb=derNum(intBytes(r,32)),sb=derNum(intBytes(s,32));return cat(Uint8Array.of(0x30,rb.length+sb.length),rb,sb);}}}
+    K=await hmac(K,cat(V,Uint8Array.of(0)));V=await hmac(K,V);
+  }
+}
+async function decodeBase58(address){let v=0n;for(const c of address){let i=B58.indexOf(c);if(i<0)throw Error('无效 Base58 地址');v=v*58n+BigInt(i);}let a=[];while(v){a.push(Number(v&255n));v>>=8n;}a.reverse();for(const c of address){if(c!=='1')break;a.unshift(0);}const b=Uint8Array.from(a);if(b.length!==25)throw Error('Base58 地址长度错误');if(!eq((await dsha(b.slice(0,21))).slice(0,4),b.slice(21)))throw Error('Base58 校验和错误');if(![0,5].includes(b[0]))throw Error('不是 nextBTC 主网地址');return b;}
+function polymod(vals){let ck=1;for(let v of vals){let t=ck>>>25;ck=((ck&0x1ffffff)<<5)^v;for(let i=0;i<5;i++)if((t>>>i)&1)ck^=[0x3b6a57b2,0x26508e6d,0x1ea119fa,0x3d4233dd,0x2a1462b3][i];}return ck;}
+function convert(data,from,to,pad=false){let acc=0,bits=0,out=[],mask=(1<<to)-1;for(let v of data){if(v<0||v>>from)throw Error('Invalid bech32 digit');acc=(acc<<from)|v;bits+=from;while(bits>=to){bits-=to;out.push((acc>>bits)&mask);}}if(pad&&bits)out.push((acc<<(to-bits))&mask);else if(!pad&&(bits>=from||((acc<<(to-bits))&mask)!==0))throw Error('Invalid bech32 padding');return Uint8Array.from(out);}
+function decodeBech(address){if(address!==address.toLowerCase()&&address!==address.toUpperCase())throw Error('大小写混合的 Bech32 地址');const s=address.toLowerCase(),pos=s.lastIndexOf('1');if(pos!==2||s.slice(0,pos)!=='bc')throw Error('不是 nextBTC 主网 Bech32 地址');let d=[];for(const c of s.slice(pos+1)){const i=BECH.indexOf(c);if(i<0)throw Error('无效 Bech32 字符');d.push(i);}if(d.length<7||d.length>90)throw Error('Bech32 长度错误');const hrp='bc',extended=[...hrp].map(c=>c.charCodeAt(0)>>5).concat([0],[...hrp].map(c=>c.charCodeAt(0)&31),d);
+if(polymod(extended)!==1)throw Error('Bech32 校验和错误（只支持 SegWit v0）');if(d[0]!==0)throw Error('不支持 Taproot 或其他见证版本');const program=convert(d.slice(1,-6),5,8);if(program.length!==20&&program.length!==32)throw Error('见证程序长度错误');return program;}
+async function scriptFor(address){if(/^bc1/i.test(address)){const p=decodeBech(address);return cat(Uint8Array.of(0,p.length),p);}const b=await decodeBase58(address);const h=b.slice(1,21);return b[0]===0?cat(Uint8Array.of(0x76,0xa9,20),h,Uint8Array.of(0x88,0xac)):cat(Uint8Array.of(0xa9,20),h,Uint8Array.of(0x87));}
+async function ownScripts(wif){const key=await C.importWIF(wif);const pt=multiply(key.scalar);const pub=cat(Uint8Array.of(pt.y&1n?3:2),intBytes(pt.x,32)),uncompressed=cat(Uint8Array.of(4),intBytes(pt.x,32),intBytes(pt.y,32));
+const witnessHash=await h160(pub),legacyHash=await h160(key.compressed?pub:uncompressed),redeem=cat(Uint8Array.of(0,20),witnessHash);
+return {key,pub,legacyPub:key.compressed?pub:uncompressed,legacy:cat(Uint8Array.of(0x76,0xa9,20),legacyHash,Uint8Array.of(0x88,0xac)),nested:cat(Uint8Array.of(0xa9,20),await h160(redeem),Uint8Array.of(0x87)),native:redeem,redeem,scriptCode:cat(Uint8Array.of(0x76,0xa9,20),witnessHash,Uint8Array.of(0x88,0xac))};}
+function output(b){return cat(intBytes(b.value,8,true),varint(b.script.length),b.script);}
+function input(b,script){return cat(reverse(unhex(b.txid)),intBytes(b.vout,4,true),varint(script.length),script,intBytes(0xfffffffd,4,true));}
+function serialize(inputs,outputs,scripts,witnesses){const vin=cat(varint(inputs.length),...inputs.map((v,i)=>input(v,scripts[i]))),vout=cat(varint(outputs.length),...outputs.map(output));const body=cat(intBytes(2,4,true),vin,vout,intBytes(0,4,true));if(!witnesses)return body;const wit=cat(...witnesses.map(w=>cat(varint(w.length),...w.map(x=>cat(varint(x.length),x)))));return cat(intBytes(2,4,true),Uint8Array.of(0,1),vin,vout,wit,intBytes(0,4,true));}
+async function signatureHash(inputs,outputs,i,scriptCode,value,segwit){const prev=inputs[i],code=cat(varint(scriptCode.length),scriptCode),hashType=intBytes(1,4,true);
+if(!segwit){const scripts=inputs.map((_,j)=>j===i?scriptCode:new Uint8Array());return dsha(cat(serialize(inputs,outputs,scripts),hashType));}
+const outpoints=cat(...inputs.map(v=>cat(reverse(unhex(v.txid)),intBytes(v.vout,4,true))));const seq=cat(...inputs.map(()=>intBytes(0xfffffffd,4,true)));
+return dsha(cat(intBytes(2,4,true),await dsha(outpoints),await dsha(seq),reverse(unhex(prev.txid)),intBytes(prev.vout,4,true),code,intBytes(value,8,true),intBytes(0xfffffffd,4,true),await dsha(cat(...outputs.map(output))),intBytes(0,4,true),hashType));}
+function toSats(v){if(!/^(?:0|[1-9]\d*)(?:\.\d{1,8})?$/.test(String(v)))throw Error('金额最多 8 位小数');const [a,b='']=String(v).split('.');const n=BigInt(a)*100000000n+BigInt((b+'00000000').slice(0,8));if(n<=0n||n>21000000n*100000000n)throw Error('无效金额');return n;}
+function parseInputs(results,scripts){const known=new Map([[hex(scripts.legacy),'legacy'],[hex(scripts.nested),'nested'],[hex(scripts.native),'native']]);const arr=[];const seen=new Set();for(const a of results){for(const u of a.utxos||[]){const type=known.get(String(u.script).toLowerCase());if(!type)continue;if(typeof u.txid!=='string'||!/^[a-f0-9]{64}$/i.test(u.txid)||!Number.isInteger(u.vout)||u.vout<0||u.vout>0xffffffff||!Number.isSafeInteger(u.value)||u.value<=0||!u.mature)continue;
+const k=u.txid+':'+u.vout;if(seen.has(k))throw Error('索引返回重复 UTXO');seen.add(k);arr.push({txid:u.txid,vout:u.vout,value:BigInt(u.value),type});}}
+return arr;}
+function estimateVbytes(inputs,outputs){const base=10+inputs.reduce((n,x)=>n+({legacy:148,nested:64,native:41}[x.type]),0)+outputs.reduce((n,o)=>n+8+1+o.script.length,0);const wit=inputs.some(x=>x.type!=='legacy');const extra=inputs.reduce((n,x)=>n+({legacy:1,nested:110,native:109}[x.type]),0)+(wit?2:0);return base+(wit?Math.ceil(extra/4):0);}
+async function build({wif,results,to,amount,feeRate='2',changeAddress,types=['legacy','nested','native']}){const own=await ownScripts(wif),target=await scriptFor(to);let change=await scriptFor(changeAddress);
+if(![own.legacy,own.nested,own.native].some(s=>eq(s,change)))throw Error('找零地址必须属于当前 WIF');
+const sats=toSats(amount),rate=Number(feeRate);if(!Number.isFinite(rate)||rate<1||rate>1000)throw Error('手续费率仅允许 1-1000 sat/vB');
+if(sats<546n)throw Error('发送金额过小（dust）');const chosen=new Set(types);if(!chosen.size||[...chosen].some(t=>!['legacy','nested','native'].includes(t)))throw Error('请至少选择一种可用于发送的地址');let utxos=parseInputs(results,own).filter(u=>chosen.has(u.type));if(utxos.length>80)throw Error('单笔发送最多使用 80 个 UTXO');if(!utxos.length)throw Error('没有可用的已确认 UTXO');utxos.sort((a,b)=>a.value>b.value?-1:a.value<b.value?1:0);
+let selected=[],total=0n,outputs=[{value:sats,script:target}],fee=0n,changeValue=0n;
+for(const u of utxos){selected.push(u);total+=u.value;let two=[...outputs,{value:546n,script:change}];const feeWithChange=BigInt(Math.ceil((estimateVbytes(selected,two)+3)*rate));
+if(total>=sats+feeWithChange+546n){fee=feeWithChange;changeValue=total-sats-fee;outputs=[{value:sats,script:target},{value:changeValue,script:change}];break;}
+const feeNoChange=BigInt(Math.ceil((estimateVbytes(selected,outputs)+3)*rate));if(total>=sats+feeNoChange){fee=total-sats;changeValue=0n;break;}
+}
+if(total<sats+fee||fee<=0n||total!==sats+fee+changeValue)throw Error('余额不足以支付金额及手续费');
+// Refuse excessive estimated fee and any unexplained surplus.
+if(fee>BigInt(Math.ceil((estimateVbytes(selected,outputs)+3)*rate))+600n)throw Error('找零过小，可能导致异常手续费；请调整金额');
+const scripts=[],witnesses=[];
+for(let i=0;i<selected.length;i++){const u=selected[i],legacy=u.type==='legacy',script=legacy?own.legacy:own.scriptCode,digest=await signatureHash(selected,outputs,i,script,u.value,!legacy),sig=cat(await sign(digest,own.key.privateBytes),Uint8Array.of(1));
+if(legacy){scripts.push(cat(push(sig),push(own.legacyPub)));witnesses.push([]);}else{scripts.push(u.type==='nested'?push(own.redeem):new Uint8Array());witnesses.push([sig,own.pub]);}}
+const raw=serialize(selected,outputs,scripts,selected.some(x=>x.type!=='legacy')?witnesses:null),noWit=serialize(selected,outputs,scripts),txid=hex(reverse(await dsha(noWit))),vbytes=Math.ceil((noWit.length*3+raw.length)/4);
+if(BigInt(Math.ceil(vbytes*rate))>fee)throw Error('实际签名交易手续费低于设定费率');
+if(fee>BigInt(Math.ceil(vbytes*rate))+600n)throw Error('实际手续费异常');
+return {hex:hex(raw),txid,fee_sats:fee.toString(),amount_sats:sats.toString(),change_sats:changeValue.toString(),input_sats:total.toString(),vbytes,inputs:selected.map(x=>({txid:x.txid,vout:x.vout,type:x.type,value_sats:x.value.toString()})),outputs:[{address:to,value_sats:sats.toString()},...(changeValue?[{address:changeAddress,value_sats:changeValue.toString()}]:[])]};}
+
+// Sweep/consolidate selected address types into one self-owned output.
+// The wallet never exposes a remote signing RPC.
+async function sweep({wif,results,to,feeRate='2',types=['legacy','nested','native']}){
+  const own=await ownScripts(wif), target=await scriptFor(to);
+  if(![own.legacy,own.nested,own.native].some(s=>eq(s,target)))throw Error('归集目标必须属于当前 WIF 的三个地址');
+  const chosen=new Set(types);
+  if(!chosen.size||[...chosen].some(t=>!['legacy','nested','native'].includes(t)))throw Error('请至少选择一种合法地址类型');
+  const rate=Number(feeRate);
+  if(!Number.isFinite(rate)||rate<1||rate>1000)throw Error('手续费率仅允许 1–1000 sat/vB');
+  const inputs=parseInputs(results,own).filter(u=>chosen.has(u.type));
+  if(!inputs.length)throw Error('选中的地址没有可归集的已确认 UTXO');
+  if(inputs.length>80)throw Error('一次最多归集 80 个 UTXO；请分批处理');
+  const total=inputs.reduce((sum,u)=>sum+u.value,0n);
+  const estimates=[{value:546n,script:target}];
+  const fee=BigInt(Math.ceil((estimateVbytes(inputs,estimates)+4)*rate));
+  const value=total-fee;
+  if(value<546n)throw Error('归集余额不足以覆盖矿工费和最小输出');
+  if(fee>100000n || fee*20n>total)throw Error('归集手续费超过安全上限，请减少 UTXO 或调整费率');
+  const outputs=[{value,script:target}],scripts=[],witnesses=[];
+  for(let i=0;i<inputs.length;i++){
+    const u=inputs[i],legacy=u.type==='legacy';
+    const digest=await signatureHash(inputs,outputs,i,legacy?own.legacy:own.scriptCode,u.value,!legacy);
+    const signature=cat(await sign(digest,own.key.privateBytes),Uint8Array.of(1));
+    if(legacy){scripts.push(cat(push(signature),push(own.legacyPub)));witnesses.push([]);}
+    else{scripts.push(u.type==='nested'?push(own.redeem):new Uint8Array());witnesses.push([signature,own.pub]);}
+  }
+  const raw=serialize(inputs,outputs,scripts,inputs.some(u=>u.type!=='legacy')?witnesses:null);
+  const base=serialize(inputs,outputs,scripts),txid=hex(reverse(await dsha(base)));
+  const vbytes=Math.ceil((base.length*3+raw.length)/4);
+  if(BigInt(Math.ceil(vbytes*rate))>fee)throw Error('实际签名交易手续费低于指定费率');
+  if(fee>BigInt(Math.ceil(vbytes*rate))+600n)throw Error('归集实际手续费异常');
+  return {hex:hex(raw),txid,fee_sats:fee.toString(),amount_sats:value.toString(),change_sats:'0',input_sats:total.toString(),vbytes,mode:'sweep',inputs:inputs.map(u=>({txid:u.txid,vout:u.vout,type:u.type,value_sats:u.value.toString()})),outputs:[{address:to,value_sats:value.toString()}]};
+}
+return {scriptFor,toSats,ownScripts,build,sweep,decodeBase58,decodeBech};
+})();
+globalThis.NextTx=NextTx;
+
+
+
+</script>
+<script>
     let nt, privKeyHex = null,
       pubKeyHex = null,
       wsPool = {},
@@ -12734,6 +13429,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
       let statusDot = document.getElementById("relay-status");
       if(statusDot) statusDot.className = "w-2 h-2 rounded-full bg-red-500 mr-1.5 shadow-sm shrink-0";
 
+      clearNbtcWalletState();
       privKeyHex = null;
       sessionStorage.removeItem("dage_session_priv");
     }
@@ -13012,8 +13708,8 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
       "toggleKey" === pendingAction ? (skInput.value = realNsec, skInput.type = "text",
           btnToggle.innerText = "隐藏") : "copyKey" === pendingAction ? (copyText(realNsec),
           alert("私钥已复制！请妥善保管！"), skInput.value = "••••••••••••••", skInput.type = "password",
-          btnToggle.innerText = "显示") : "exportChat" === pendingAction ? executeExport() : "showQrKey" === pendingAction && (showQrCode("私钥二维码 (绝密，打死不给别人看)", realNsec),
-          skInput.value = "••••••••••••••", skInput.type = "password", btnToggle.innerText = "显示"),
+          btnToggle.innerText = "显示") : "exportChat" === pendingAction ? executeExport() : "showQrKey" === pendingAction ? (showQrCode("私钥二维码 (绝密，打死不给别人看)", realNsec),
+          skInput.value = "••••••••••••••", skInput.type = "password", btnToggle.innerText = "显示") : "showNbtcWif" === pendingAction && showNbtcWifPanel(realSk),
         pendingAction = null;
     }
 
@@ -13176,7 +13872,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
     async function logout() {
       _syncCacheTimer && clearTimeout(_syncCacheTimer), await executeCacheSave(), _cloudSyncDebounceTimer && (clearTimeout(_cloudSyncDebounceTimer),
           await syncBackupToCloud()), sessionStorage.removeItem("dage_session_pub"), sessionStorage.removeItem("dage_session_priv"),
-        privKeyHex = null, pubKeyHex = null, isLocked = !1;
+        clearNbtcWalletState(), privKeyHex = null, pubKeyHex = null, isLocked = !1;
       for (let url in wsPool) wsPool[url] && wsPool[url].close();
       wsPool = {}, window.location.reload();
     }
@@ -13210,10 +13906,10 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
       }
       contacts = await loadEncryptedData("contacts_cache", []);
       let accInfo = accounts.find(a => a.pubkey === pubKeyHex);
-      accInfo && accInfo.name && !profiles[pubKeyHex]?.name && (profiles[pubKeyHex] || (profiles[pubKeyHex] = {}),
-            profiles[pubKeyHex].name = accInfo.name, setTimeout(() => { publishEvent(0, JSON.stringify({
-              name: accInfo.name
-            })).catch(() => {}) }, 5000));
+      if (accInfo && accInfo.name && !profiles[pubKeyHex]?.name) {
+        profiles[pubKeyHex] || (profiles[pubKeyHex] = {});
+        profiles[pubKeyHex].name = accInfo.name;
+      }
       let pArr = await loadEncryptedData("pinned_chats", []);
       pinnedChats = new Set(pArr);
       let hArr = await loadEncryptedData("hidden_chats", []);
@@ -13287,6 +13983,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
               joinGroup(pendingInvite); // 交由底层安全的 joinGroup 触发加群拦截窗
           }, 600);
       }
+      void initializeNbtcWallet();
     }
 
     // EOSE-driven bounded backfill; uses account-local encrypted sync watermark.
@@ -13382,6 +14079,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
                 console.log(`✅ [Relay] 已连接: ${url} (${relayStates[url].ping}ms)`), updateRelayStatusUI(),
                   setTimeout(retryReliableOutbox, 200),
                   reconnectTimers[url] && clearInterval(reconnectTimers[url]);
+                if (nbtcWalletOwnerPk === pubKeyHex && nbtcWalletAddress && privKeyHex && !isLocked) setTimeout(() => void ensureNbtcOwnProfilePublished(), 1200);
                 let ghostGids = Object.keys(groups).filter(gid => 1 === groups[gid].type),
                   normalGids = Object.keys(groups).filter(gid => 0 === groups[gid].type),
                   filterBase = {
@@ -13391,7 +14089,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
                   kinds: [0, 5],
                   authors: [pubKeyHex]
                 }, {
-                  kinds: [4, 5, 1059],
+                  kinds: [4, 5, 1059, 30078],
                   "#p": [pubKeyHex],
                   ...filterBase
                 }, {
@@ -13422,11 +14120,52 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
                 if (isLocked) return;
                 const data = JSON.parse(event.data);
                 if ("EVENT" === data[0]) {
+                  const peerProfileWaiter = nbtcPeerProfileWaiters.get(data[1]);
+                  if (peerProfileWaiter && data[2] && data[2].kind === 0 && data[2].pubkey === peerProfileWaiter.peerPk) {
+                    try {
+                      const applied = await applyNbtcPeerProfileEvent(peerProfileWaiter.peerPk, data[2]);
+                      if (applied && applied.received) {
+                        peerProfileWaiter.received = true;
+                        peerProfileWaiter.addressFound = !!applied.address;
+                      }
+                    } catch (profileError) {
+                      console.warn("[NBTC] 联系人个人资料读取失败：", profileError);
+                    }
+                  }
+                  const profileWaiter = nbtcProfileQueryWaiters.get(data[1]);
+                  if (profileWaiter && data[2] && data[2].kind === 0 && data[2].pubkey === profileWaiter.authorPk) {
+                    try {
+                      const candidateEvent = data[2];
+                      if (typeof candidateEvent.content === "string" && candidateEvent.content.length <= 524288 && candidateEvent.id === nt.getEventHash(candidateEvent) && nt.verifySignature(candidateEvent)) {
+                        const candidateProfile = JSON.parse(candidateEvent.content);
+                        if (candidateProfile && typeof candidateProfile === "object" && !Array.isArray(candidateProfile)) {
+                          profileWaiter.received = true;
+                          profileWaiter.pendingValidations = (profileWaiter.pendingValidations || 0) + 1;
+                          try {
+                            profileWaiter.profilesByRelay[url] = await nbtcValidateProfileAddress(candidateProfile);
+                          } finally {
+                            profileWaiter.pendingValidations = Math.max(0, (profileWaiter.pendingValidations || 1) - 1);
+                            if (!profileWaiter.pending.size && !profileWaiter.pendingValidations) finishNbtcProfileQuery(data[1], true);
+                          }
+                        }
+                      }
+                    } catch { profileWaiter.profilesByRelay[url] = null; }
+                  }
                   const st = syncPages[data[1]];
                   if (st && st.sock === ws) {st.count++;st.oldest=Math.min(st.oldest,data[2].created_at || st.until);}
                   await handleNostrEvent(data[2]);
-                } else if ("EOSE" === data[0] && syncPages[data[1]] && syncPages[data[1]].sock === ws) {
-                  finishBackfillPage(data[1]);
+                } else if ("EOSE" === data[0]) {
+                  if (syncPages[data[1]] && syncPages[data[1]].sock === ws) finishBackfillPage(data[1]);
+                  const profileWaiter = nbtcProfileQueryWaiters.get(data[1]);
+                  if (profileWaiter) {
+                    profileWaiter.pending.delete(url);
+                    if (!profileWaiter.pending.size && !profileWaiter.pendingValidations) finishNbtcProfileQuery(data[1], true);
+                  }
+                  const peerProfileWaiter = nbtcPeerProfileWaiters.get(data[1]);
+                  if (peerProfileWaiter) {
+                    peerProfileWaiter.pending.delete(url);
+                    if (!peerProfileWaiter.pending.size) finishNbtcPeerProfileQuery(data[1]);
+                  }
                 }
                 else if ("OK" === data[0]) {
                   let eventId = data[1],
@@ -13822,18 +14561,22 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
       }, 250);
     }
 
-    async function publishEvent(kind, content, tags = []) {
+    async function publishEvent(kind, content, tags = [], createdAt = null) {
       let safeTags = [...tags];
       safeTags.push(["client", "dagechat"], ["nonce", Math.random().toString().substring(2, 10)]);
       let event = {
         kind: kind,
-        created_at: Math.floor(Date.now() / 1e3),
+        created_at: Number.isFinite(createdAt) ? Math.max(Math.floor(Date.now() / 1e3), Math.floor(createdAt)) : Math.floor(Date.now() / 1e3),
         tags: safeTags,
         content: content,
         pubkey: pubKeyHex
       };
       event.id = nt.getEventHash(event), event.sig = nt.getSignature(event, privKeyHex);
       let results = await broadcastToRelays(JSON.stringify(["EVENT", event]));
+      if (kind === 0 && results && Object.values(results).some(x => x && x.success)) {
+        window._profiles_ts || (window._profiles_ts = {});
+        window._profiles_ts[pubKeyHex] = Math.max(Number(window._profiles_ts[pubKeyHex] || 0), event.created_at);
+      }
       return event._send_status = results, event;
     }
 
@@ -13855,7 +14598,50 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
               if (window._profiles_ts[ev.pubkey] && ev.created_at <= window._profiles_ts[ev.pubkey]) return;
               window._profiles_ts[ev.pubkey] = ev.created_at;
               let newProfile = JSON.parse(ev.content);
-              if (newProfile.ln && !newProfile.lud16 && (newProfile.lud16 = newProfile.ln), profiles[ev.pubkey] = Object.assign({}, profiles[ev.pubkey] || {}, newProfile),
+              if (!newProfile || typeof newProfile !== "object" || Array.isArray(newProfile)) return;
+              const profileContainsNbtcAddress = Object.prototype.hasOwnProperty.call(newProfile, "nbtc_address");
+              let validatedNbtcAddress = null;
+              if (profileContainsNbtcAddress) {
+                validatedNbtcAddress = await nbtcValidateProfileAddress(newProfile);
+                if (validatedNbtcAddress) {
+                  newProfile.nbtc_address = validatedNbtcAddress;
+                  newProfile.nbtc_network = "nextbtc";
+                  newProfile.nbtc_genesis = DGCHAT_NBTC_GENESIS;
+                } else {
+                  delete newProfile.nbtc_address;
+                  delete newProfile.nbtc_network;
+                  delete newProfile.nbtc_genesis;
+                }
+              }
+              if (ev.pubkey === pubKeyHex) {
+                nbtcRemoteProfileState[ev.pubkey] = {
+                  seen: true, address: validatedNbtcAddress,
+                  network: validatedNbtcAddress ? "nextbtc" : null,
+                  genesis: validatedNbtcAddress ? DGCHAT_NBTC_GENESIS : null,
+                  created_at: ev.created_at
+                };
+              }
+              const mergedProfile = Object.assign({}, profiles[ev.pubkey] || {}, newProfile);
+              if (profileContainsNbtcAddress && !validatedNbtcAddress) {
+                delete mergedProfile.nbtc_address; delete mergedProfile.nbtc_network; delete mergedProfile.nbtc_genesis;
+                if (ev.pubkey !== pubKeyHex) delete nbtcPeerAddresses[ev.pubkey];
+              }
+              profiles[ev.pubkey] = mergedProfile;
+              if (validatedNbtcAddress && ev.pubkey !== pubKeyHex) {
+                nbtcRememberPeerAddress(ev.pubkey, validatedNbtcAddress);
+                nbtcPeerAddresses[ev.pubkey] = validatedNbtcAddress;
+                void saveNbtcPeerAddresses();
+                if (nbtcWalletPeerPk === ev.pubkey) renderNbtcPeerPanel();
+                const sendModal = document.getElementById("nbtc-send-modal");
+                if (sendModal && !sendModal.classList.contains("hidden") && nbtcWalletPeerPk === ev.pubkey) {
+                  const sendAddress = document.getElementById("nbtc-send-address");
+                  if (sendAddress && !sendAddress.value.trim()) sendAddress.value = validatedNbtcAddress;
+                  const sendStatus = document.getElementById("nbtc-send-peer-status");
+                  if (sendStatus) sendStatus.textContent = "已获取对方的 NBTC 收款地址，请核对后再转账。";
+                }
+              }
+              if (profileContainsNbtcAddress && !validatedNbtcAddress && ev.pubkey !== pubKeyHex) void saveNbtcPeerAddresses();
+              if (newProfile.ln && !newProfile.lud16 && (profiles[ev.pubkey].lud16 = newProfile.ln),
                 newProfile.picture) try {
                 setDBItem("dage_avatar_" + ev.pubkey, newProfile.picture);
               } catch (e) {}
@@ -13873,7 +14659,9 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
                     isChanged = !0), isChanged && localStorage.setItem("dage_accounts", JSON.stringify(accounts));
                 }
               }
+              syncLocalEncryptedCache();
               renderContacts(), currentChatPk === ev.pubkey && updateChatHeader(), document.getElementById("peer-profile-modal").classList.contains("hidden") || peerPkToViewGlobal !== ev.pubkey || showPeerProfileModal(peerPkToViewGlobal);
+              if (nbtcWalletPeerPk === ev.pubkey) renderNbtcPeerPanel();
             } catch (e) {}
             if (3 === ev.kind && ev.pubkey === pubKeyHex) {
               let newContacts = ev.tags.filter(t => "p" === t[0]).map(t => t[1]);
@@ -13959,6 +14747,18 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
                 kinds: [0],
                 authors: allPksToFetch
               }])), void triggerBatchUpdate(!1);
+            }
+            if (30078 === ev.kind && ev.pubkey !== pubKeyHex) {
+              const pTag = ev.tags.find(t => "p" === t[0]);
+              const dTag = ev.tags.find(t => "d" === t[0]);
+              if (pTag && pTag[1] === pubKeyHex && dTag && String(dTag[1] || "").startsWith("dgchat_nbtc_wallet_v1:")) {
+                try {
+                  const decrypted = await pythonNip44Decrypt(privKeyHex, ev.pubkey, ev.content);
+                  if (decrypted) handleNbtcProtocolMessage(ev.pubkey, ev.pubkey, decrypted);
+                } catch (e) {
+                  console.warn("[NBTC] 加密地址交换消息解密失败：", ev.id, e);
+                }
+              }
             }
             if (30078 === ev.kind && ev.pubkey === pubKeyHex) {
               let dTag = ev.tags.find(t => "d" === t[0]);
@@ -14049,6 +14849,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
     }
 
     function _processDecryptedMessage(peerPk, msgId, senderPk, decryptedText, timestamp, encType, replyId = null) {
+      if (handleNbtcProtocolMessage(peerPk, senderPk, decryptedText)) return;
       let safeNowTs = Math.floor(Date.now() / 1e3) + 60;
       if (timestamp = Math.min(timestamp, safeNowTs), !(clearedChatTimestamps[peerPk] && timestamp <= clearedChatTimestamps[peerPk])) {
         if (!!!groups[peerPk] && !(senderPk === pubKeyHex) && !contacts.includes(senderPk)) {
@@ -14817,7 +15618,9 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
     function updateChatHeader() {
       if (!currentChatPk) return;
       let isGroup = !!groups[currentChatPk],
-        prof = isGroup ? groups[currentChatPk] : profiles[currentChatPk] || {
+        nbtcChatButton = document.getElementById("nbtc-chat-button");
+      if (nbtcChatButton) nbtcChatButton.classList.toggle("hidden", isGroup || currentChatPk === pubKeyHex);
+      let prof = isGroup ? groups[currentChatPk] : profiles[currentChatPk] || {
           name: nt.nip19.npubEncode(currentChatPk).substring(0, 10) + "..."
         },
         displayName = currentChatPk === pubKeyHex ? `${prof.name || "我"} (备忘录 💾)` : prof.name;
@@ -15274,10 +16077,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
           displayPubkeyText = targetPk;
         targetPk === pubKeyHex ? (displayName = `${prof.name || "我"} (备忘录 💾)`, displayPubkeyText = nt.nip19.npubEncode(targetPk)) : isGroup || (displayPubkeyText = nt.nip19.npubEncode(targetPk)),
           document.getElementById("peer-modal-name").innerText = displayName || "未知", document.getElementById("peer-modal-pubkey-label").innerText = displayId,
-          document.getElementById("peer-modal-pubkey").innerText = displayPubkeyText, isGroup || broadcastToRelays(JSON.stringify(["REQ", "fetch-live-profile-" + Date.now(), {
-            kinds: [0],
-            authors: [targetPk]
-          }]));
+          document.getElementById("peer-modal-pubkey").innerText = displayPubkeyText, !isGroup && targetPk !== pubKeyHex && requestNbtcPeerProfile(targetPk, true);
 
         let pubkeyActionsEl = document.getElementById("peer-modal-pubkey-actions");
         if (pubkeyActionsEl) {
@@ -15316,6 +16116,16 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
           prof.relays ? (document.getElementById("peer-modal-relays").innerText = prof.relays,
               relaysBox.classList.remove("hidden"), hasExtra = !0) : relaysBox.classList.add("hidden"),
             hasExtra ? extraContainer.classList.remove("hidden") : extraContainer.classList.add("hidden");
+        }
+        const nbtcProfileBox = document.getElementById("peer-modal-nbtc-container");
+        const nbtcProfileText = document.getElementById("peer-modal-nbtc-address");
+        const displayedNbtcAddress = targetPk === pubKeyHex && nbtcWalletAddress ? nbtcWalletAddress : (nbtcProfileAddressCandidate(prof) || nbtcPeerAddresses[targetPk] || null);
+        if (!isGroup && displayedNbtcAddress && nbtcProfileBox && nbtcProfileText) {
+          nbtcProfileText.textContent = displayedNbtcAddress;
+          nbtcProfileBox.classList.remove("hidden");
+        } else if (nbtcProfileBox) {
+          nbtcProfileBox.classList.add("hidden");
+          if (nbtcProfileText) nbtcProfileText.textContent = "";
         }
         let badge = document.getElementById("peer-modal-badge"),
           actionArea = document.getElementById("peer-action-btn-area");
@@ -15378,6 +16188,12 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
         }));
     }
 
+    function copyPeerNbtcAddress() {
+      const value = document.getElementById("peer-modal-nbtc-address")?.textContent?.trim();
+      if (!value) return;
+      copyText(value);
+      nbtcToast("NBTC 收款地址已复制", "success");
+    }
     function closePeerProfileModal(fromPopState = !1) {
       peerPkToViewGlobal = null, document.getElementById("peer-profile-content").classList.add("scale-95"),
         setTimeout(() => document.getElementById("peer-profile-modal").classList.add("hidden"), 200),
@@ -15428,15 +16244,22 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
     }
 
     function switchProfileTab(tab) {
-      let btnProfile = document.getElementById("tab-btn-profile"),
-        btnPrivacy = document.getElementById("tab-btn-privacy"),
-        contentProfile = document.getElementById("profile-tab-content"),
-        contentPrivacy = document.getElementById("privacy-tab-content");
-      "profile" === tab ? (btnProfile.className = "flex-1 py-2.5 text-sm font-bold border-b-2 border-blue-500 text-blue-600 transition",
-        btnPrivacy.className = "flex-1 py-2.5 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition",
-        contentProfile.classList.remove("hidden"), contentPrivacy.classList.add("hidden")) : (btnPrivacy.className = "flex-1 py-2.5 text-sm font-bold border-b-2 border-blue-500 text-blue-600 transition",
-        btnProfile.className = "flex-1 py-2.5 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition",
-        contentPrivacy.classList.remove("hidden"), contentProfile.classList.add("hidden"));
+      const tabs = ["profile", "privacy", "network"];
+      if (!tabs.includes(tab)) tab = "profile";
+      for (const name of tabs) {
+        const button = document.getElementById("tab-btn-" + name);
+        const content = document.getElementById(name + "-tab-content");
+        if (!button || !content) continue;
+        const active = name === tab;
+        button.className = active
+          ? "flex-1 py-2.5 text-sm font-bold border-b-2 border-blue-500 text-blue-600 transition"
+          : "flex-1 py-2.5 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition";
+        content.classList.toggle("hidden", !active);
+      }
+      if (tab === "network") {
+        const input = document.getElementById("nbtc-api-url-network");
+        if (input) { try { input.value = nbtcApiBase(); } catch { input.value = DGCHAT_NBTC_DEFAULT_API; } }
+      }
     }
 
     async function saveProfile() {
@@ -15464,16 +16287,19 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
       let accIdx = accounts.findIndex(a => a.pubkey === pubKeyHex);
       accIdx > -1 && (accounts[accIdx].name = name || accounts[accIdx].name, accounts[accIdx].picture = pic || accounts[accIdx].picture,
           accounts[accIdx].about = about, accounts[accIdx].website = website, accounts[accIdx].ln = ln,
-          accounts[accIdx].relays = relaysDisplay, localStorage.setItem("dage_accounts", JSON.stringify(accounts))),
-        (name || pic || about || website || ln || relaysDisplay) && await publishEvent(0, JSON.stringify({
-          name: name,
-          picture: pic,
-          about: about,
-          website: website,
-          lud16: ln,
-          ln: ln,
-          relays: relaysDisplay
-        }));
+          accounts[accIdx].relays = relaysDisplay, localStorage.setItem("dage_accounts", JSON.stringify(accounts)));
+      if (nbtcWalletOwnerPk !== pubKeyHex || !nbtcWalletAddress) {
+          try { await ensureNbtcWalletReady(); } catch (e) { console.warn("[NBTC] 保存个人资料时暂未取得钱包地址：", e); }
+        }
+        try { await ensureNbtcOwnProfilePublished(); } catch {}
+        const publicProfilePayload = nbtcBuildPublicProfilePayload({
+          name: name, picture: pic, about: about, website: website,
+          lud16: ln, ln: ln, relays: relaysDisplay
+        });
+        if (name || pic || about || website || ln || relaysDisplay || publicProfilePayload.nbtc_address) {
+          const nextProfileCreatedAt = Math.max(Math.floor(Date.now() / 1000), Number(window._profiles_ts?.[pubKeyHex] || 0) + 1);
+          await publishEvent(0, JSON.stringify(publicProfilePayload), [], nextProfileCreatedAt);
+        }
         syncLocalEncryptedCache(); triggerCloudSync();
         updateActivity(), closeProfileModal(), alert("设置已保存！");
     }
@@ -15639,7 +16465,8 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
 }
 \n                            .clear {
   clear: both
-}</style></head><body>\n                        <h2>DGCHAT 聊天记录导出</h2><p>导出时间: ${nowStr}</p>`,
+}</style>
+</head><body>\n                        <h2>DGCHAT 聊天记录导出</h2><p>导出时间: ${nowStr}</p>`,
           (s_ts > 0 || e_ts > 0) && (exportData += `<p>时间范围: ${s_str || "起始"} 至 ${e_str || "至今"}</p>`)) : (exportData += `DGCHAT 聊天记录导出\nTime: ${nowStr}\n`,
           (s_ts > 0 || e_ts > 0) && (exportData += `Range: ${s_str || "Start"} TO ${e_str || "Now"}\n`),
           exportData += "====================\n");
@@ -16215,7 +17042,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
           ghostGids = Object.keys(groups).filter(gid => 1 === groups[gid].type),
           normalGids = Object.keys(groups).filter(gid => 0 === groups[gid].type);
         const req = ["REQ", "wakeup-sync-" + Date.now(), {
-          kinds: [4, 5, 1059],
+          kinds: [4, 5, 1059, 30078],
           "#p": [pubKeyHex],
           since: safeNow
         }];
@@ -16358,7 +17185,1805 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
                 softReloadNetwork();
             }
         });
-      </script>
+
+    // ================================================================
+    // DGChat + NextBTC integration. Wallet derivation is a permanent
+    // compatibility protocol. V1 is immutable after release; a serious fix must
+    // add a parallel V2 migration path and preserve V1 recovery forever.
+    // ================================================================
+    const DGCHAT_NBTC_DERIVATION_VERSION = "DGCHAT-NBTC-HKDF-SHA256-V1";
+    const DGCHAT_NBTC_DERIVATION_SALT = "DGCHAT|NEXTBTC|WALLET|HKDF-SHA256|V1";
+    const DGCHAT_NBTC_DERIVATION_INFO = "DGCHAT|NEXTBTC|000003167643c767d4e015a8bad0fb1054286acf23cfe3009083f9a9cd72dbc1|SECP256K1|P2WPKH|CHILD-PRIVATE-KEY|V1";
+    const DGCHAT_NBTC_GENESIS = "000003167643c767d4e015a8bad0fb1054286acf23cfe3009083f9a9cd72dbc1";
+    const DGCHAT_NBTC_DEFAULT_API = "https://47.103.211.197:8777";
+    const DGCHAT_NBTC_SECP_N = BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
+    const DGCHAT_NBTC_COIN = 100000000n;
+    let nbtcWalletWif = null;
+    let nbtcWalletAddress = null;
+    let nbtcWalletOwnerPk = null;
+    let nbtcWalletEpoch = 0;
+    let nbtcWalletInitPromise = null;
+    let nbtcDerivationSelfTestPromise = null;
+    let nbtcBalanceInFlight = null;
+    let nbtcBalanceLastAt = 0;
+    let nbtcBalanceCacheLoadedFor = null;
+    let nbtcBalanceIndexedHeight = null;
+    let nbtcHistoryLastAt = 0;
+    let nbtcBalanceSats = null;
+    let nbtcPendingSats = 0n;
+    let nbtcMempoolSpentSats = 0n;
+    let nbtcSpendableSats = 0n;
+    let nbtcPeerAddresses = {};
+    let nbtcPeerAddressHistory = {};
+    let nbtcPeerResponseAt = {};
+    let nbtcPeerProfileQueryAt = {};
+    let nbtcRemoteProfileState = {};
+    let nbtcProfileQueryWaiters = new Map();
+    let nbtcPeerProfileWaiters = new Map();
+    let nbtcPeerProfileSeenAt = {};
+    let nbtcOwnProfilePublishPromise = null;
+    let nbtcOwnProfilePublishRetryTimer = null;
+    let nbtcWalletPeerPk = null;
+    let nbtcHistoryFilterPk = null;
+    let nbtcTxHistory = [];
+    let nbtcPendingDraft = null;
+    let nbtcBroadcastBusy = false;
+    let nbtcWifHideTimer = null;
+    const nbtcFeeEstimateState = { updatedAt: 0, tiers: null, loading: false, promise: null, mode: "medium", userSelected: false };
+
+    function nbtcUtf8(value) { return new TextEncoder().encode(String(value)); }
+    function nbtcHexBytes(hex) {
+      if (typeof hex !== "string" || !/^[0-9a-f]{64}$/i.test(hex)) throw new Error("Nostr 主私钥格式异常，无法派生 NBTC 钱包");
+      return Uint8Array.from(hex.match(/.{2}/g), x => parseInt(x, 16));
+    }
+    function nbtcBigInt(bytes) {
+      let value = 0n;
+      for (const b of bytes) value = (value << 8n) | BigInt(b);
+      return value;
+    }
+    async function deriveNbtcWifFromNostrSecret(secretHex) {
+      // Permanent V1 protocol. Nostr's x-only BIP340 public key identifies d and n-d
+      // as the same identity, so canonicalize the root scalar to the even-Y representative.
+      // V1 test vector: master scalar 1 (and n-1) -> child scalar
+      // 4210f918caf5ea65faa5e8f424e0115f29afd0e3af29b41e8c63fd8e20dc94ae
+      // WIF KyS8nrXN59qES6VAh13nVDzpnqvJYhJqXmFnteCB7JrN1QuZfoss
+      // P2WPKH bc1qdk8kr2n0l4pfj8pxd4eepffmrwy6sh5k4xahp7
+      const master = nbtcHexBytes(secretHex);
+      let masterScalar = nbtcBigInt(master);
+      if (masterScalar <= 0n || masterScalar >= DGCHAT_NBTC_SECP_N) throw new Error("Nostr 主私钥不在 secp256k1 合法范围内");
+      const masterPayload = new Uint8Array(34);
+      masterPayload[0] = 128;
+      masterPayload.set(master, 1);
+      masterPayload[33] = 1;
+      const masterWif = await globalThis.NextCrypto.checksumEncode(masterPayload);
+      const masterScripts = await globalThis.NextTx.ownScripts(masterWif);
+      if (masterScripts.pub[0] === 3) masterScalar = DGCHAT_NBTC_SECP_N - masterScalar;
+      if (masterScripts.key && masterScripts.key.privateBytes) masterScripts.key.privateBytes.fill(0);
+      master.fill(0);
+      masterPayload.fill(0);
+      const canonicalMaster = new Uint8Array(32);
+      let scalarCursor = masterScalar;
+      for (let i = 31; i >= 0; i--) {
+        canonicalMaster[i] = Number(scalarCursor & 255n);
+        scalarCursor >>= 8n;
+      }
+      const hkdfKey = await crypto.subtle.importKey("raw", canonicalMaster, "HKDF", false, ["deriveBits"]);
+      canonicalMaster.fill(0);
+      const salt = nbtcUtf8(DGCHAT_NBTC_DERIVATION_SALT);
+      const infoBase = nbtcUtf8(DGCHAT_NBTC_DERIVATION_INFO);
+      let child = null;
+      // Counter is part of the immutable protocol. Rejection sampling avoids modulo bias.
+      for (let counter = 0; counter < 256; counter++) {
+        const info = new Uint8Array(infoBase.length + 4);
+        info.set(infoBase);
+        new DataView(info.buffer).setUint32(infoBase.length, counter, false);
+        const candidate = new Uint8Array(await crypto.subtle.deriveBits({
+          name: "HKDF", hash: "SHA-256", salt, info
+        }, hkdfKey, 256));
+        const scalar = nbtcBigInt(candidate);
+        if (scalar > 0n && scalar < DGCHAT_NBTC_SECP_N) {
+          child = candidate;
+          break;
+        }
+        candidate.fill(0);
+      }
+      if (!child) throw new Error("NBTC 子私钥派生失败，已停止操作；不会使用取模或降级算法");
+      // nextBTC Wallet V0.5.49 confirmed network parameters: compressed WIF version 0x80, Bech32 HRP bc.
+      const payload = new Uint8Array(34);
+      payload[0] = 128;
+      payload.set(child, 1);
+      payload[33] = 1;
+      const wif = await globalThis.NextCrypto.checksumEncode(payload);
+      const imported = await globalThis.NextCrypto.importWIF(wif);
+      const validWif = imported.compressed && imported.privateBytes.length === 32;
+      if (imported.privateBytes) imported.privateBytes.fill(0);
+      if (!validWif) throw new Error("NBTC 派生私钥编码校验失败");
+      child.fill(0);
+      payload.fill(0);
+      return wif;
+    }
+
+    async function verifyNbtcDerivationProtocolV1() {
+      if (nbtcDerivationSelfTestPromise) return await nbtcDerivationSelfTestPromise;
+      nbtcDerivationSelfTestPromise = (async () => {
+        // Public test-only vectors. These private keys are intentionally public and must never receive real funds.
+        const testMaster = "0000000000000000000000000000000000000000000000000000000000000001";
+        const equivalentBip340Scalar = "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140";
+        const expectedWif = "KyS8nrXN59qES6VAh13nVDzpnqvJYhJqXmFnteCB7JrN1QuZfoss";
+        const expectedAddress = "bc1qdk8kr2n0l4pfj8pxd4eepffmrwy6sh5k4xahp7";
+        const firstWif = await deriveNbtcWifFromNostrSecret(testMaster);
+        const firstAddress = (await globalThis.NextCrypto.derive(firstWif)).native;
+        if (firstWif !== expectedWif || firstAddress !== expectedAddress) throw new Error("NBTC 派生协议 V1 固定测试向量不匹配，已阻止钱包初始化");
+        const equivalentWif = await deriveNbtcWifFromNostrSecret(equivalentBip340Scalar);
+        if (equivalentWif !== expectedWif) throw new Error("NBTC 派生协议 V1 BIP340 规范化测试失败，已阻止钱包初始化");
+        return true;
+      })();
+      try { return await nbtcDerivationSelfTestPromise; }
+      catch (e) { nbtcDerivationSelfTestPromise = null; throw e; }
+    }
+
+    function nbtcFormatSats(value) {
+      try {
+        const n = typeof value === "bigint" ? value : BigInt(String(value ?? 0));
+        const sign = n < 0n ? "-" : "";
+        const abs = n < 0n ? -n : n;
+        return sign + (abs / DGCHAT_NBTC_COIN).toString() + "." + (abs % DGCHAT_NBTC_COIN).toString().padStart(8, "0");
+      } catch { return "0.00000000"; }
+    }
+    function nbtcShortAddress(address) {
+      const s = String(address || "");
+      return s.length > 28 ? s.slice(0, 14) + "…" + s.slice(-9) : s;
+    }
+    function nbtcApiStorageKey() { return "dage_nbtc_api_" + (pubKeyHex || "default"); }
+    function nbtcApiBase() {
+      let raw = DGCHAT_NBTC_DEFAULT_API;
+      try {
+        raw = localStorage.getItem(nbtcApiStorageKey()) || raw;
+        // Migrate only the previous built-in HTTP default to the V0.5.49 HTTPS endpoint.
+        // Explicit custom HTTP endpoints remain untouched for local/reverse-proxy deployments.
+        if (String(raw).replace(/\/+$/, "") === "http://47.103.211.197:8777") {
+          raw = DGCHAT_NBTC_DEFAULT_API;
+          localStorage.setItem(nbtcApiStorageKey(), raw);
+        }
+      } catch {}
+      const u = new URL(raw);
+      if (!( ["http:", "https:"] .includes(u.protocol)) || u.username || u.password || u.search || u.hash) throw new Error("服务地址必须是有效的 HTTPS 地址");
+      return (u.origin + u.pathname).replace(/\/+$/, "");
+    }
+    function nbtcSetQuickCertTrust(show) {
+      let isHttps = false;
+      try { isHttps = new URL(nbtcApiBase()).protocol === "https:"; } catch {}
+      const visible = !!(show && isHttps);
+      const quickButton = document.getElementById("nbtc-trust-cert");
+      if (quickButton) quickButton.hidden = !visible;
+      const settings = document.getElementById("nbtc-index-settings");
+      const maintenanceButton = document.getElementById("nbtc-trust-cert-network");
+      if (maintenanceButton) maintenanceButton.hidden = !(visible && settings && !settings.hidden);
+      const state = document.getElementById("nbtc-network-connection-state");
+      if (state && visible) { state.textContent = "需要确认证书"; state.className = "text-[10px] text-amber-600 dark:text-amber-400"; }
+    }
+    function openNbtcCertificateCheck() {
+      try {
+        const u = new URL(nbtcApiBase());
+        if (u.protocol !== "https:") throw new Error("当前连接未使用 HTTPS");
+        u.pathname = u.pathname.replace(/\/$/, "") + "/api/v1/status";
+        u.search = ""; u.hash = "";
+        window.open(u.href, "_blank", "noopener,noreferrer");
+        nbtcToast("已打开安全连接页面，请按浏览器提示完成证书确认。", "info");
+      } catch (e) { nbtcToast("无法打开证书页面：" + (e.message || e), "error"); }
+    }
+    function nbtcNormalizeApi(raw) {
+      let u;
+      try { u = new URL(String(raw || "").trim()); } catch { throw new Error("服务地址格式不正确"); }
+      if (!["http:", "https:"].includes(u.protocol) || u.username || u.password || u.search || u.hash) throw new Error("仅支持不含账号密码、查询参数和片段的 HTTP/HTTPS 地址");
+      return (u.origin + u.pathname).replace(/\/+$/, "");
+    }
+    async function nbtcApiRequest(path, options = {}) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 18000);
+      try {
+        const response = await fetch(nbtcApiBase() + path, { cache: "no-store", signal: controller.signal, ...options });
+        let body;
+        try { body = await response.json(); } catch { throw new Error("服务返回内容格式异常"); }
+        if (!response.ok) throw new Error(body.error || ("HTTP " + response.status));
+        return body;
+      } catch (e) {
+        if (e.name === "AbortError") throw new Error("连接超时，请稍后重试");
+        if (e instanceof TypeError) e.nbtcTransportFailure = true;
+        throw e;
+      } finally { clearTimeout(timeout); }
+    }
+    function nbtcFormatFeeRate(value) {
+      const n = Number(value);
+      return Number.isFinite(n) ? n.toFixed(2).replace(/\\.00$/, "").replace(/(\\.\\d)0$/, "$1") : "—";
+    }
+    function nbtcSetFeeRate(rate, mode, userAction = false) {
+      const value = Number(rate);
+      if (!Number.isFinite(value) || value < 1 || value > 1000) return false;
+      const normalized = String(value);
+      document.getElementById("nbtc-send-fee").value = normalized;
+      document.getElementById("nbtc-fee-current-rate").textContent = nbtcFormatFeeRate(value);
+      nbtcFeeEstimateState.mode = mode;
+      if (userAction) nbtcFeeEstimateState.userSelected = true;
+      document.querySelectorAll("[data-nbtc-fee-tier]").forEach(button => {
+        const active = button.dataset.nbtcFeeTier === mode;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+      document.getElementById("nbtc-fee-manual").hidden = mode !== "custom";
+      if (mode === "custom") document.getElementById("nbtc-send-fee-custom").value = normalized;
+      return true;
+    }
+    function nbtcRenderFeeSuggestions(data) {
+      const tiers = data && data.tiers && typeof data.tiers === "object" ? data.tiers : {};
+      for (const name of ["low", "medium", "high"]) {
+        const row = tiers[name];
+        const button = document.querySelector('[data-nbtc-fee-tier="' + name + '"]');
+        const value = document.getElementById("nbtc-fee-" + name + "-value");
+        const rate = row && row.available === true ? Number(row.sat_vb) : NaN;
+        if (Number.isFinite(rate) && rate >= 1 && rate <= 1000) {
+          value.textContent = nbtcFormatFeeRate(rate);
+          button.disabled = false;
+          button.dataset.rate = String(rate);
+        } else {
+          value.textContent = "—";
+          button.disabled = true;
+          delete button.dataset.rate;
+        }
+      }
+      if (tiers.medium && tiers.medium.available === true && !nbtcFeeEstimateState.userSelected && nbtcFeeEstimateState.mode === "medium") {
+        nbtcSetFeeRate(tiers.medium.sat_vb, "medium", false);
+      }
+      const status = document.getElementById("nbtc-fee-estimate-status");
+      if (status) status.textContent = "手续费建议已更新";
+    }
+    async function refreshNbtcFeeSuggestions(force = false) {
+      if (nbtcFeeEstimateState.loading) return nbtcFeeEstimateState.promise;
+      if (!force && nbtcFeeEstimateState.tiers && Date.now() - nbtcFeeEstimateState.updatedAt < 60000) {
+        nbtcRenderFeeSuggestions({ tiers: nbtcFeeEstimateState.tiers });
+        return true;
+      }
+      nbtcFeeEstimateState.loading = true;
+      const status = document.getElementById("nbtc-fee-estimate-status");
+      if (status) status.textContent = "正在获取手续费建议…";
+      nbtcFeeEstimateState.promise = (async () => {
+        try {
+          const data = await nbtcApiRequest("/api/v1/fees");
+          if (!data || data.unit !== "sat/vB" || !data.tiers || typeof data.tiers !== "object") {
+            throw new Error("手续费建议暂不可用");
+          }
+          nbtcFeeEstimateState.tiers = data.tiers;
+          nbtcFeeEstimateState.updatedAt = Date.now();
+          nbtcRenderFeeSuggestions(data);
+          nbtcSetQuickCertTrust(false);
+          return true;
+        } catch (e) {
+          if (e && e.nbtcTransportFailure) nbtcSetQuickCertTrust(true);
+          if (status) status.textContent = "暂时无法获取手续费建议，可继续使用默认费率或自定义手续费。";
+          return false;
+        } finally {
+          nbtcFeeEstimateState.loading = false;
+          nbtcFeeEstimateState.promise = null;
+        }
+      })();
+      return await nbtcFeeEstimateState.promise;
+    }
+    function nbtcGetSelectedFeeRate() {
+      let raw = document.getElementById("nbtc-send-fee").value.trim();
+      if (nbtcFeeEstimateState.mode === "custom") {
+        raw = document.getElementById("nbtc-send-fee-custom").value.trim();
+      }
+      const rate = Number(raw);
+      if (!raw || !Number.isFinite(rate) || rate < 1 || rate > 1000) {
+        throw new Error("手续费率必须在 1–1000 sat/vB 之间");
+      }
+      return String(rate);
+    }
+    function nbtcResetFeeSelection() {
+      nbtcFeeEstimateState.mode = "medium";
+      nbtcFeeEstimateState.userSelected = false;
+      document.getElementById("nbtc-send-fee-custom").value = "";
+      nbtcSetFeeRate(2, "medium", false);
+      const status = document.getElementById("nbtc-fee-estimate-status");
+      if (status) status.textContent = nbtcFeeEstimateState.tiers ? "正在更新手续费建议…" : "正在获取手续费建议…";
+    }
+    function nbtcBindFeeControls() {
+      document.querySelectorAll("[data-nbtc-fee-tier]").forEach(button => {
+        button.addEventListener("click", () => {
+          if (button.disabled || !nbtcSetFeeRate(button.dataset.rate, button.dataset.nbtcFeeTier, true)) return;
+          clearNbtcPreviewOnEdit();
+          const status = document.getElementById("nbtc-fee-estimate-status");
+          if (status) status.textContent = "已选择" + (button.dataset.nbtcFeeTier === "low" ? "低费率" : button.dataset.nbtcFeeTier === "high" ? "高费率" : "推荐费率");
+        });
+      });
+      document.getElementById("nbtc-fee-custom-toggle").addEventListener("click", () => {
+        const panel = document.getElementById("nbtc-fee-manual");
+        if (panel.hidden) {
+          const current = document.getElementById("nbtc-send-fee").value || "2";
+          nbtcSetFeeRate(current, "custom", true);
+          document.getElementById("nbtc-send-fee-custom").focus();
+        } else {
+          const medium = nbtcFeeEstimateState.tiers && nbtcFeeEstimateState.tiers.medium;
+          nbtcFeeEstimateState.userSelected = true;
+          if (medium && medium.available === true && nbtcSetFeeRate(medium.sat_vb, "medium", false)) {
+            const status = document.getElementById("nbtc-fee-estimate-status");
+            if (status) status.textContent = "已恢复推荐费率";
+          } else {
+            nbtcSetFeeRate(2, "medium", false);
+            const status = document.getElementById("nbtc-fee-estimate-status");
+            if (status) status.textContent = "使用默认费率";
+          }
+        }
+        clearNbtcPreviewOnEdit();
+      });
+      document.getElementById("nbtc-send-fee-custom").addEventListener("input", event => {
+        const raw = event.target.value.trim();
+        const status = document.getElementById("nbtc-fee-estimate-status");
+        if (!raw) {
+          document.getElementById("nbtc-send-fee").value = "";
+          if (status) status.textContent = "请输入 1–1000 sat/vB";
+          clearNbtcPreviewOnEdit();
+          return;
+        }
+        const value = Number(raw);
+        if (!Number.isFinite(value) || value < 1 || value > 1000) {
+          document.getElementById("nbtc-send-fee").value = "";
+          if (status) status.textContent = "费率范围为 1–1000 sat/vB";
+          clearNbtcPreviewOnEdit();
+          return;
+        }
+        nbtcSetFeeRate(value, "custom", true);
+        if (status) status.textContent = "使用自定义费率";
+        clearNbtcPreviewOnEdit();
+      });
+      document.getElementById("nbtc-fee-refresh").addEventListener("click", () => {
+        void refreshNbtcFeeSuggestions(true);
+      });
+    }
+
+    async function nbtcCheckStatus(requireSpend = false) {
+      let s;
+      try { s = await nbtcApiRequest("/api/v1/status"); nbtcSetQuickCertTrust(false); }
+      catch (e) { nbtcSetQuickCertTrust(!!e.nbtcTransportFailure); throw e; }
+      if (s.genesis !== DGCHAT_NBTC_GENESIS) throw new Error("当前服务与 NextBTC 主网不匹配");
+      if (!s.synced || !Number.isInteger(s.indexed_height) || !Number.isInteger(s.core_height) || s.indexed_height < 0 || s.core_height - s.indexed_height > 1 || s.indexed_height > s.core_height + 1) throw new Error("网络数据尚未同步到主链，暂时无法安全操作");
+      if (requireSpend) {
+        const now = Math.floor(Date.now() / 1000);
+        if (!Object.prototype.hasOwnProperty.call(s, "mempool_updated") || !Object.prototype.hasOwnProperty.call(s, "mempool_error")) throw new Error("当前服务器版本暂不支持完整的转账安全检查，已暂停发送。");
+        if (s.mempool_error) throw new Error("网络待处理交易状态异常：" + s.mempool_error);
+        const age = now - Number(s.mempool_updated);
+        if (!Number.isFinite(age) || age > 60 || age < -30) throw new Error("网络待处理交易信息已过期，暂时无法安全转账，请稍后重试。");
+        if (s.capabilities && s.capabilities.mempool_spend_guard !== true) throw new Error("当前服务器尚未提供完整的转账安全检查，暂时无法发送。");
+      }
+      return s;
+    }
+    let nbtcToastTimer = null;
+    function nbtcToast(message, kind = "info") {
+      let toast = document.getElementById("dgchat-nbtc-toast");
+      if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "dgchat-nbtc-toast";
+        toast.className = "fixed bottom-5 left-1/2 -translate-x-1/2 z-[260] max-w-[90vw] px-3 py-2 rounded-lg shadow-lg text-xs text-white bg-gray-800 dark:bg-gray-700 opacity-0 transition-opacity duration-200 pointer-events-none";
+        toast.setAttribute("role", "status");
+        toast.setAttribute("aria-live", "polite");
+        document.body.appendChild(toast);
+      }
+      toast.textContent = String(message || "");
+      toast.className = "fixed bottom-5 left-1/2 -translate-x-1/2 z-[260] max-w-[90vw] px-3 py-2 rounded-lg shadow-lg text-xs text-white transition-opacity duration-200 pointer-events-none " +
+        (kind === "error" ? "bg-red-600" : kind === "success" ? "bg-green-700" : kind === "warning" ? "bg-amber-700" : "bg-gray-800 dark:bg-gray-700");
+      toast.classList.remove("opacity-0");
+      toast.classList.add("opacity-100");
+      if (nbtcToastTimer) clearTimeout(nbtcToastTimer);
+      nbtcToastTimer = setTimeout(() => {
+        toast.classList.remove("opacity-100");
+        toast.classList.add("opacity-0");
+      }, 2600);
+    }
+
+    function nbtcSetBalanceLabel(text) {
+      const el = document.getElementById("my-nbtc-balance");
+      if (el) el.textContent = text;
+    }
+    function nbtcSetWalletStatus(text, kind = "info") {
+      const el = document.getElementById("nbtc-wallet-status");
+      if (el) {
+        el.textContent = text;
+        el.className = "text-[10px] mt-1 " + (kind === "error" ? "text-red-500" : kind === "success" ? "text-green-600 dark:text-green-400" : "text-gray-400");
+      }
+    }
+    function nbtcFormatBalanceSyncTime(timestamp) {
+      const value = Number(timestamp);
+      if (!Number.isFinite(value) || value <= 0) return "时间未知";
+      try {
+        return new Date(value).toLocaleString("zh-CN", {
+          year: "numeric", month: "2-digit", day: "2-digit",
+          hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
+        });
+      } catch { return new Date(value).toLocaleString(); }
+    }
+    function nbtcSetBalanceBadge(text, kind = "info") {
+      const el = document.getElementById("nbtc-wallet-network");
+      if (!el) return;
+      el.hidden = !text;
+      el.textContent = text || "";
+      el.className = "text-[10px] " + (
+        kind === "success" ? "text-green-600 dark:text-green-400" :
+        kind === "warning" ? "text-amber-600 dark:text-amber-400" :
+        kind === "error" ? "text-red-500" :
+        "text-gray-400"
+      );
+    }
+    function nbtcRenderBalanceSnapshot() {
+      if (nbtcBalanceSats === null) return;
+      const formatted = nbtcFormatSats(nbtcBalanceSats);
+      nbtcSetBalanceLabel("余额：" + formatted + " NBTC");
+      const modalBalance = document.getElementById("nbtc-wallet-balance");
+      if (modalBalance) modalBalance.textContent = formatted;
+      const pending = document.getElementById("nbtc-wallet-pending");
+      if (pending) pending.textContent = "待确认收入：" + nbtcFormatSats(nbtcPendingSats) +
+        " NBTC · 待确认支出：" + nbtcFormatSats(nbtcMempoolSpentSats) + " NBTC";
+    }
+    function nbtcApplyCachedBalance(cache, owner, address) {
+      if (!cache || cache.version !== 1 || cache.genesis !== DGCHAT_NBTC_GENESIS ||
+          cache.address !== address || cache.owner !== owner) return false;
+      const fields = ["balance_sats", "spendable_sats", "mempool_spent_sats", "unconfirmed_received_sats"];
+      if (fields.some(key => typeof cache[key] !== "string" || !/^\d{1,24}$/.test(cache[key]))) return false;
+      const syncedAt = Number(cache.synced_at);
+      if (!Number.isFinite(syncedAt) || syncedAt <= 0 || syncedAt > Date.now() + 300000) return false;
+      try {
+        const balance = BigInt(cache.balance_sats);
+        const spendable = BigInt(cache.spendable_sats);
+        const mempoolSpent = BigInt(cache.mempool_spent_sats);
+        const pendingReceived = BigInt(cache.unconfirmed_received_sats);
+        if (balance !== spendable + mempoolSpent) return false;
+        nbtcBalanceSats = balance;
+        nbtcSpendableSats = spendable;
+        nbtcMempoolSpentSats = mempoolSpent;
+        nbtcPendingSats = pendingReceived;
+        nbtcBalanceLastAt = syncedAt;
+        nbtcBalanceIndexedHeight = cache.indexed_height !== null && cache.indexed_height !== undefined &&
+          Number.isSafeInteger(Number(cache.indexed_height)) ? Number(cache.indexed_height) : null;
+        nbtcBalanceCacheLoadedFor = owner + ":" + address;
+        nbtcRenderBalanceSnapshot();
+        nbtcSetBalanceBadge("缓存", "warning");
+        nbtcSetWalletStatus("显示上次同步的余额 · 上次同步：" + nbtcFormatBalanceSyncTime(syncedAt), "info");
+        return true;
+      } catch { return false; }
+    }
+    async function loadNbtcBalanceCache(owner, address) {
+      if (!privKeyHex || !pubKeyHex || pubKeyHex !== owner || isLocked) return false;
+      const cache = await loadEncryptedData("nbtc_balance_cache_v1", null);
+      if (pubKeyHex !== owner || isLocked || nbtcWalletAddress !== address) return false;
+      return nbtcApplyCachedBalance(cache, owner, address);
+    }
+    async function saveNbtcBalanceCache(owner, address, indexedHeight) {
+      if (!privKeyHex || !pubKeyHex || pubKeyHex !== owner || isLocked ||
+          nbtcWalletOwnerPk !== owner || nbtcWalletAddress !== address || nbtcBalanceSats === null) return;
+      const cache = {
+        version: 1,
+        owner,
+        address,
+        genesis: DGCHAT_NBTC_GENESIS,
+        balance_sats: String(nbtcBalanceSats),
+        spendable_sats: String(nbtcSpendableSats),
+        mempool_spent_sats: String(nbtcMempoolSpentSats),
+        unconfirmed_received_sats: String(nbtcPendingSats),
+        indexed_height: indexedHeight !== null && indexedHeight !== undefined &&
+          Number.isSafeInteger(Number(indexedHeight)) ? Number(indexedHeight) : null,
+        synced_at: nbtcBalanceLastAt
+      };
+      // Bind encryption and storage to the account snapshot. Never let an account
+      // switch during async encryption write this cache under another account key.
+      const ownerSecret = privKeyHex;
+      const encrypted = await nt.nip04.encrypt(ownerSecret, owner, JSON.stringify(cache));
+      if (!encrypted || pubKeyHex !== owner || privKeyHex !== ownerSecret || isLocked) return;
+      const storageKey = "dage_enc_nbtc_balance_cache_v1_" + owner;
+      try {
+        await setDBItem(storageKey, encrypted);
+        try { localStorage.removeItem(storageKey); } catch {}
+      } catch (dbError) {
+        try { localStorage.setItem(storageKey, encrypted); }
+        catch (quotaError) { console.warn("[NBTC] 本地余额缓存空间不足，未能保存缓存。"); }
+      }
+    }
+    function nbtcWalletModalIsOpen() {
+      const modal = document.getElementById("nbtc-wallet-modal");
+      return !!(modal && !modal.classList.contains("hidden"));
+    }
+
+    // NBTC address is public Nostr profile metadata. The chain marker is checked
+    // separately because bc1q encoding alone cannot distinguish NextBTC from Bitcoin.
+    function nbtcProfileAddressCandidate(profile) {
+      if (!profile || profile.nbtc_network !== "nextbtc" || profile.nbtc_genesis !== DGCHAT_NBTC_GENESIS) return null;
+      const address = typeof profile.nbtc_address === "string" ? profile.nbtc_address.trim() : "";
+      return /^bc1q[0-9a-z]{20,}$/i.test(address) && address === address.toLowerCase() ? address : null;
+    }
+    function nbtcRememberPeerAddress(peerPk, address) {
+      if (!peerPk || peerPk === pubKeyHex || !/^[0-9a-f]{64}$/i.test(String(peerPk))) return false;
+      if (typeof address !== "string" || !/^bc1q[0-9a-z]{20,}$/i.test(address) || address !== address.toLowerCase()) return false;
+      const list = Array.isArray(nbtcPeerAddressHistory[peerPk]) ? nbtcPeerAddressHistory[peerPk] : [];
+      if (list.includes(address)) return false;
+      // A contact normally has one deterministic address. Keep a bounded local
+      // history for the rare case that a contact explicitly migrates addresses.
+      nbtcPeerAddressHistory[peerPk] = [...list, address].slice(-64);
+      return true;
+    }
+    function nbtcPeerAddressIndex() {
+      const index = new Map();
+      const add = (peerPk, address) => {
+        if (!peerPk || peerPk === pubKeyHex || !/^[0-9a-f]{64}$/i.test(String(peerPk)) ||
+            typeof address !== "string" || !/^bc1q[0-9a-z]{20,}$/i.test(address) || address !== address.toLowerCase()) return;
+        if (!index.has(address)) index.set(address, new Set());
+        index.get(address).add(peerPk);
+      };
+      for (const [peerPk, addresses] of Object.entries(nbtcPeerAddressHistory || {})) {
+        if (Array.isArray(addresses)) for (const address of addresses) add(peerPk, address);
+      }
+      for (const [peerPk, address] of Object.entries(nbtcPeerAddresses || {})) add(peerPk, address);
+      for (const [peerPk, profile] of Object.entries(profiles || {})) add(peerPk, nbtcProfileAddressCandidate(profile));
+      return index;
+    }
+    function nbtcAssociateHistoryContacts(list) {
+      const addressIndex = nbtcPeerAddressIndex();
+      let changed = false;
+      for (const tx of list || []) {
+        if (!tx || typeof tx !== "object") continue;
+        const matches = new Set((Array.isArray(tx.matched_contact_pubkeys) ? tx.matched_contact_pubkeys : [])
+          .filter(pk => typeof pk === "string" && /^[0-9a-f]{64}$/i.test(pk) && pk !== pubKeyHex));
+        if (typeof tx.contact_pubkey === "string" && /^[0-9a-f]{64}$/i.test(tx.contact_pubkey) && tx.contact_pubkey !== pubKeyHex) {
+          matches.add(tx.contact_pubkey);
+        }
+        const direction = tx.direction || (Number(tx.net_sats || 0) > 0 ? "incoming" : Number(tx.net_sats || 0) < 0 ? "outgoing" : "neutral");
+        const candidateAddresses = direction === "outgoing"
+          ? [tx.recipient_address, ...(Array.isArray(tx.output_addresses) ? tx.output_addresses : [])]
+          : direction === "incoming"
+            ? (Array.isArray(tx.input_addresses) ? tx.input_addresses : [])
+            : [];
+        for (const address of candidateAddresses) {
+          const owners = addressIndex.get(address);
+          if (owners) for (const peerPk of owners) matches.add(peerPk);
+        }
+        const next = Array.from(matches).sort();
+        if (JSON.stringify(next) !== JSON.stringify(tx.matched_contact_pubkeys || [])) {
+          tx.matched_contact_pubkeys = next;
+          changed = true;
+        }
+        if (next.length === 1) tx.contact_name = nbtcPeerName(next[0]);
+        else if (next.length > 1) tx.contact_name = "多个联系人";
+      }
+      return changed;
+    }
+    function nbtcHistoryMatchesContact(tx, peerPk) {
+      return !!peerPk && (tx?.contact_pubkey === peerPk ||
+        (Array.isArray(tx?.matched_contact_pubkeys) && tx.matched_contact_pubkeys.includes(peerPk)));
+    }
+    async function nbtcValidateProfileAddress(profile) {
+      const address = nbtcProfileAddressCandidate(profile);
+      if (!address || !globalThis.NextCrypto || typeof globalThis.NextCrypto.validateAddress !== "function") return null;
+      try {
+        await globalThis.NextCrypto.validateAddress(address);
+        return address;
+      } catch { return null; }
+    }
+    async function applyNbtcPeerProfileEvent(peerPk, peerEvent) {
+      if (!peerPk || !peerEvent || peerEvent.kind !== 0 || peerEvent.pubkey !== peerPk ||
+          typeof peerEvent.content !== "string" || peerEvent.content.length > 524288 ||
+          peerEvent.id !== nt.getEventHash(peerEvent) || !nt.verifySignature(peerEvent)) {
+        return { received: false, address: null };
+      }
+      const peerProfile = JSON.parse(peerEvent.content);
+      if (!peerProfile || typeof peerProfile !== "object" || Array.isArray(peerProfile)) {
+        return { received: false, address: null };
+      }
+      const lastSeen = Math.max(
+        Number(nbtcPeerProfileSeenAt[peerPk] || 0),
+        Number(window._profiles_ts?.[peerPk] || 0)
+      );
+      if (Number(peerEvent.created_at || 0) < lastSeen) {
+        return { received: true, stale: true, address: nbtcPeerAddressFor(peerPk) };
+      }
+      const validAddress = await nbtcValidateProfileAddress(peerProfile);
+      profiles[peerPk] = Object.assign({}, profiles[peerPk] || {}, peerProfile);
+      nbtcPeerProfileSeenAt[peerPk] = Number(peerEvent.created_at || 0);
+      if (validAddress) {
+        nbtcRememberPeerAddress(peerPk, validAddress);
+        profiles[peerPk].nbtc_address = validAddress;
+        profiles[peerPk].nbtc_network = "nextbtc";
+        profiles[peerPk].nbtc_genesis = DGCHAT_NBTC_GENESIS;
+        nbtcPeerAddresses[peerPk] = validAddress;
+      } else {
+        // The newest signed kind-0 profile is authoritative. Do not keep an old
+        // cached address if this newer profile explicitly omits or invalidates it.
+        delete profiles[peerPk].nbtc_address;
+        delete profiles[peerPk].nbtc_network;
+        delete profiles[peerPk].nbtc_genesis;
+        delete nbtcPeerAddresses[peerPk];
+      }
+      void saveNbtcPeerAddresses();
+      syncLocalEncryptedCache();
+      if (nbtcWalletPeerPk === peerPk) renderNbtcPeerPanel();
+      if (peerPkToViewGlobal === peerPk && !document.getElementById("peer-profile-modal").classList.contains("hidden")) showPeerProfileModal(peerPk);
+      return { received: true, address: validAddress };
+    }
+    function nbtcPeerAddressFor(pk) {
+      if (!pk) return null;
+      const profileAddress = nbtcProfileAddressCandidate(profiles[pk]);
+      return profileAddress || (typeof nbtcPeerAddresses[pk] === "string" ? nbtcPeerAddresses[pk] : null);
+    }
+    function nbtcBuildPublicProfilePayload(overrides = {}) {
+      const current = profiles[pubKeyHex] && typeof profiles[pubKeyHex] === "object" ? profiles[pubKeyHex] : {};
+      const account = (accounts || []).find(a => a && a.pubkey === pubKeyHex) || {};
+      const payload = {};
+      for (const [key, value] of Object.entries(current)) {
+        if (key === "ghostAlias" || key.startsWith("_") || typeof value === "function" || value === undefined) continue;
+        payload[key] = value;
+      }
+      for (const key of ["name", "picture", "about", "website", "lud16", "ln", "relays"]) {
+        if ((payload[key] === undefined || payload[key] === "") && account[key] !== undefined && account[key] !== "") payload[key] = account[key];
+      }
+      Object.assign(payload, overrides);
+      delete payload.nbtc_address; delete payload.nbtc_network; delete payload.nbtc_genesis;
+      const address = nbtcWalletOwnerPk === pubKeyHex && nbtcWalletAddress ? nbtcWalletAddress : nbtcProfileAddressCandidate(current);
+      if (address) {
+        payload.nbtc_address = address;
+        payload.nbtc_network = "nextbtc";
+        payload.nbtc_genesis = DGCHAT_NBTC_GENESIS;
+      }
+      return payload;
+    }
+    function finishNbtcProfileQuery(subId, complete = false) {
+      const state = nbtcProfileQueryWaiters.get(subId);
+      if (!state) return;
+      nbtcProfileQueryWaiters.delete(subId);
+      clearTimeout(state.timer);
+      for (const url of state.urls) {
+        const sock = wsPool[url];
+        if (sock && sock.readyState === WebSocket.OPEN) { try { sock.send(JSON.stringify(["CLOSE", subId])); } catch {} }
+      }
+      if (complete && state.authorPk && !state.received) nbtcRemoteProfileState[state.authorPk] = { seen: true, address: null, network: null, genesis: null, created_at: 0 };
+      state.resolve({ complete: !!complete, relays: state.urls.length, received: !!state.received, profilesByRelay: state.profilesByRelay });
+    }
+    function queryNbtcProfileFromRelays(authorPk, timeoutMs = 5000) {
+      const active = Object.entries(wsPool).filter(([, sock]) => sock && sock.readyState === WebSocket.OPEN);
+      if (!active.length) return Promise.resolve({ complete: false, relays: 0 });
+      const subId = "nbtc-profile-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+      return new Promise(resolve => {
+        const state = { authorPk, received: false, pendingValidations: 0, profilesByRelay: Object.fromEntries(active.map(([url]) => [url, null])), urls: active.map(([url]) => url), pending: new Set(active.map(([url]) => url)), resolve, timer: null };
+        state.timer = setTimeout(() => finishNbtcProfileQuery(subId, false), timeoutMs);
+        nbtcProfileQueryWaiters.set(subId, state);
+        for (const [url, sock] of active) {
+          try { sock.send(JSON.stringify(["REQ", subId, { kinds: [0], authors: [authorPk], limit: 1 }])); }
+          catch { state.pending.delete(url); }
+        }
+        if (!state.pending.size) finishNbtcProfileQuery(subId, false);
+      });
+    }
+    function finishNbtcPeerProfileQuery(subId) {
+      const state = nbtcPeerProfileWaiters.get(subId);
+      if (!state) return;
+      nbtcPeerProfileWaiters.delete(subId);
+      clearTimeout(state.timer);
+      for (const url of state.urls) {
+        const sock = wsPool[url];
+        if (sock && sock.readyState === WebSocket.OPEN) {
+          try { sock.send(JSON.stringify(["CLOSE", subId])); } catch {}
+        }
+      }
+      const peerPk = state.peerPk;
+      if (nbtcWalletPeerPk === peerPk) {
+        if (nbtcPeerAddressFor(peerPk)) {
+          renderNbtcPeerPanel();
+        } else {
+          const message = "暂时无法获取对方的 NBTC 收款地址。请稍后重试，或手动填写地址。";
+          const panelStatus = document.getElementById("nbtc-peer-address-status");
+          if (panelStatus) panelStatus.textContent = message;
+          const sendModal = document.getElementById("nbtc-send-modal");
+          const sendStatus = document.getElementById("nbtc-send-peer-status");
+          if (sendModal && !sendModal.classList.contains("hidden") && sendStatus) sendStatus.textContent = message;
+        }
+      }
+    }
+    function requestNbtcPeerProfile(peerPk, force = false) {
+      if (!peerPk || peerPk === pubKeyHex || groups[peerPk] || !/^[0-9a-f]{64}$/i.test(peerPk)) return false;
+      const last = Number(nbtcPeerProfileQueryAt[peerPk] || 0);
+      if (!force && Date.now() - last < 15000) return false;
+      const active = Object.entries(wsPool).filter(([, sock]) => sock && sock.readyState === WebSocket.OPEN);
+      if (!active.length) return false;
+      // Close any older query for this peer before starting a fresh one.
+      for (const [oldId, oldState] of nbtcPeerProfileWaiters) {
+        if (oldState.peerPk === peerPk) finishNbtcPeerProfileQuery(oldId);
+      }
+      const subId = "nbtc-peer-profile-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+      const state = {
+        peerPk, urls: active.map(([url]) => url),
+        pending: new Set(active.map(([url]) => url)),
+        received: false, addressFound: false, timer: null
+      };
+      nbtcPeerProfileWaiters.set(subId, state);
+      nbtcPeerProfileQueryAt[peerPk] = Date.now();
+      state.timer = setTimeout(() => finishNbtcPeerProfileQuery(subId), 7000);
+      for (const [url, sock] of active) {
+        try { sock.send(JSON.stringify(["REQ", subId, { kinds: [0], authors: [peerPk], limit: 1 }])); }
+        catch { state.pending.delete(url); }
+      }
+      if (!state.pending.size) finishNbtcPeerProfileQuery(subId);
+      return true;
+    }
+    function refreshNbtcPeerProfile(peerPk = nbtcWalletPeerPk) {
+      if (!peerPk) return;
+      const sent = requestNbtcPeerProfile(peerPk, true);
+      const status = document.getElementById("nbtc-peer-address-status");
+      if (status) status.textContent = sent ? "正在更新对方的收款资料…" : "暂时无法连接，请稍后再试。";
+      if (nbtcWalletPeerPk === peerPk) {
+        const sendStatus = document.getElementById("nbtc-send-peer-status");
+        if (sendStatus && !document.getElementById("nbtc-send-modal").classList.contains("hidden")) sendStatus.textContent = status ? status.textContent : "正在更新对方的收款资料…";
+      }
+    }
+    function scheduleNbtcOwnProfilePublishRetry(delayMs = 10000) {
+      if (nbtcOwnProfilePublishRetryTimer || !privKeyHex || !pubKeyHex || isLocked) return;
+      nbtcOwnProfilePublishRetryTimer = setTimeout(() => {
+        nbtcOwnProfilePublishRetryTimer = null;
+        if (privKeyHex && pubKeyHex && !isLocked && nbtcWalletOwnerPk === pubKeyHex && nbtcWalletAddress) void ensureNbtcOwnProfilePublished();
+      }, delayMs);
+    }
+    async function ensureNbtcOwnProfilePublished() {
+      if (!privKeyHex || !pubKeyHex || isLocked || nbtcWalletOwnerPk !== pubKeyHex || !nbtcWalletAddress) return false;
+      if (nbtcOwnProfilePublishRetryTimer) { clearTimeout(nbtcOwnProfilePublishRetryTimer); nbtcOwnProfilePublishRetryTimer = null; }
+      if (nbtcOwnProfilePublishPromise) return await nbtcOwnProfilePublishPromise;
+      const owner = pubKeyHex;
+      const promise = (async () => {
+        const query = await queryNbtcProfileFromRelays(owner, 6000);
+        if (owner !== pubKeyHex || isLocked || !privKeyHex) return false;
+        // Do not block publication merely because one or more of many connected
+        // Relays fail to send EOSE before the bounded query timeout. Any responsive
+        // Relay is useful evidence; publish to all currently connected Relays when
+        // the full set cannot be confirmed.
+        const relayAddresses = Object.values(query.profilesByRelay || {});
+        const everyRelayHasAddress = query.complete && query.relays > 0 && relayAddresses.length === query.relays && relayAddresses.every(address => address === nbtcWalletAddress);
+        if (everyRelayHasAddress) {
+          profiles[owner] = Object.assign({}, profiles[owner] || {}, { nbtc_address: nbtcWalletAddress, nbtc_network: "nextbtc", nbtc_genesis: DGCHAT_NBTC_GENESIS });
+          syncLocalEncryptedCache();
+          return true;
+        }
+        const payload = nbtcBuildPublicProfilePayload({
+          nbtc_address: nbtcWalletAddress,
+          nbtc_network: "nextbtc",
+          nbtc_genesis: DGCHAT_NBTC_GENESIS
+        });
+        const nextProfileCreatedAt = Math.max(Math.floor(Date.now() / 1000), Number(window._profiles_ts?.[owner] || 0) + 1);
+        const event = await publishEvent(0, JSON.stringify(payload), [], nextProfileCreatedAt);
+        if (owner !== pubKeyHex || isLocked || !privKeyHex) return false;
+        const accepted = event && event._send_status && Object.values(event._send_status).some(x => x && x.success);
+        if (!accepted) { scheduleNbtcOwnProfilePublishRetry(15000); return false; }
+        profiles[owner] = Object.assign({}, profiles[owner] || {}, payload);
+        nbtcRemoteProfileState[owner] = { seen: true, address: nbtcWalletAddress, network: "nextbtc", genesis: DGCHAT_NBTC_GENESIS, created_at: event.created_at };
+        const accIdx = accounts.findIndex(a => a && a.pubkey === owner);
+        if (accIdx >= 0) {
+          accounts[accIdx].nbtc_address = nbtcWalletAddress;
+          accounts[accIdx].nbtc_network = "nextbtc";
+          localStorage.setItem("dage_accounts", JSON.stringify(accounts));
+        }
+        syncLocalEncryptedCache();
+        if (peerPkToViewGlobal === owner && !document.getElementById("peer-profile-modal").classList.contains("hidden")) showPeerProfileModal(owner);
+        return true;
+      })();
+      nbtcOwnProfilePublishPromise = promise;
+      try { return await promise; }
+      catch (e) {
+        console.warn("[NBTC] 个人收款资料发布失败，将在下次连接时重试：", e);
+        scheduleNbtcOwnProfilePublishRetry(15000);
+        return false;
+      } finally { if (nbtcOwnProfilePublishPromise === promise) nbtcOwnProfilePublishPromise = null; }
+    }
+
+    // Hidden maintenance entry: strict consecutive seven-tap sequence.
+    // Any non-title interaction, timeout, navigation, or background transition resets it.
+    let nbtcMaintenanceTapCount = 0;
+    let nbtcMaintenanceTapTimer = null;
+    let nbtcMaintenanceLastTapAt = 0;
+
+    function resetNbtcMaintenanceTapSequence() {
+      nbtcMaintenanceTapCount = 0;
+      nbtcMaintenanceLastTapAt = 0;
+      if (nbtcMaintenanceTapTimer !== null) {
+        clearTimeout(nbtcMaintenanceTapTimer);
+        nbtcMaintenanceTapTimer = null;
+      }
+    }
+
+    function isNbtcMaintenanceTitleTarget(target) {
+      const element = target && target.nodeType === 1 ? target : (target && target.parentElement);
+      return !!(element && typeof element.closest === "function" && element.closest("#nbtc-wallet-title"));
+    }
+
+    function nbtcHandleMaintenanceTap() {
+      const now = Date.now();
+      if (nbtcMaintenanceLastTapAt && now - nbtcMaintenanceLastTapAt > 1500) {
+        resetNbtcMaintenanceTapSequence();
+      }
+
+      nbtcMaintenanceTapCount += 1;
+      nbtcMaintenanceLastTapAt = now;
+
+      if (nbtcMaintenanceTapTimer !== null) clearTimeout(nbtcMaintenanceTapTimer);
+      nbtcMaintenanceTapTimer = setTimeout(resetNbtcMaintenanceTapSequence, 1501);
+
+      if (nbtcMaintenanceTapCount < 7) return;
+
+      // Reset immediately before changing the panel, so the completed sequence
+      // cannot be reused or accidentally trigger a second time.
+      resetNbtcMaintenanceTapSequence();
+
+      const panel = document.getElementById("nbtc-index-settings");
+      if (!panel) return;
+      const reveal = panel.hidden;
+      panel.hidden = !reveal;
+      panel.open = reveal;
+      const trustButton = document.getElementById("nbtc-trust-cert");
+      if (trustButton) nbtcSetQuickCertTrust(!trustButton.hidden);
+      nbtcToast(reveal ? "高级维护设置已打开" : "高级维护设置已隐藏", "info");
+    }
+
+    // A click anywhere except the wallet title breaks the sequence immediately.
+    // Capture phase ensures this also applies to controls whose own handlers stop bubbling.
+    document.addEventListener("pointerdown", (event) => {
+      if (!isNbtcMaintenanceTitleTarget(event.target)) resetNbtcMaintenanceTapSequence();
+    }, true);
+    document.addEventListener("click", (event) => {
+      if (!isNbtcMaintenanceTitleTarget(event.target)) resetNbtcMaintenanceTapSequence();
+    }, true);
+
+    // Reset on SPA/browser navigation and whenever the document leaves or re-enters foreground.
+    document.addEventListener("visibilitychange", resetNbtcMaintenanceTapSequence);
+    window.addEventListener("blur", resetNbtcMaintenanceTapSequence);
+    window.addEventListener("focus", resetNbtcMaintenanceTapSequence);
+    window.addEventListener("pagehide", resetNbtcMaintenanceTapSequence);
+    window.addEventListener("pageshow", resetNbtcMaintenanceTapSequence);
+    window.addEventListener("beforeunload", resetNbtcMaintenanceTapSequence);
+    window.addEventListener("hashchange", resetNbtcMaintenanceTapSequence);
+    window.addEventListener("popstate", resetNbtcMaintenanceTapSequence);
+
+    function clearNbtcWifPanel() {
+      if (nbtcWifHideTimer) clearTimeout(nbtcWifHideTimer);
+      nbtcWifHideTimer = null;
+      const panel = document.getElementById("nbtc-wif-panel");
+      const field = document.getElementById("nbtc-wif-value");
+      if (field) field.value = "";
+      if (panel) panel.classList.add("hidden");
+    }
+    function clearNbtcWalletState() {
+      nbtcWalletEpoch++;
+      nbtcBalanceCacheLoadedFor = null;
+      nbtcBalanceIndexedHeight = null;
+      nbtcWalletWif = null;
+      nbtcWalletAddress = null;
+      nbtcWalletOwnerPk = null;
+      nbtcWalletInitPromise = null;
+      nbtcBalanceInFlight = null;
+      nbtcBalanceLastAt = 0;
+      nbtcHistoryLastAt = 0;
+      nbtcBalanceSats = null;
+      nbtcPendingSats = 0n;
+      nbtcMempoolSpentSats = 0n;
+      nbtcSpendableSats = 0n;
+      nbtcPeerAddresses = {};
+      nbtcPeerAddressHistory = {};
+      nbtcPeerResponseAt = {};
+      nbtcPeerProfileQueryAt = {};
+      for (const [subId] of nbtcProfileQueryWaiters) finishNbtcProfileQuery(subId, false);
+      for (const [subId] of nbtcPeerProfileWaiters) finishNbtcPeerProfileQuery(subId);
+      nbtcPeerProfileSeenAt = {};
+      nbtcOwnProfilePublishPromise = null;
+      if (nbtcOwnProfilePublishRetryTimer) clearTimeout(nbtcOwnProfilePublishRetryTimer);
+      nbtcOwnProfilePublishRetryTimer = null;
+      nbtcWalletPeerPk = null;
+      nbtcHistoryFilterPk = null;
+      nbtcTxHistory = [];
+      nbtcPendingDraft = null;
+      nbtcBroadcastBusy = false;
+      clearNbtcWifPanel();
+      nbtcSetBalanceLabel("余额：未解锁");
+      ["nbtc-wallet-modal", "nbtc-send-modal"].forEach(id => {
+        const modal = document.getElementById(id);
+        if (modal) modal.classList.add("hidden");
+      });
+    }
+    async function initializeNbtcWallet() {
+      if (!privKeyHex || !pubKeyHex || isLocked) return false;
+      if (nbtcWalletOwnerPk === pubKeyHex && nbtcWalletWif && nbtcWalletAddress) return true;
+      const owner = pubKeyHex;
+      const epoch = ++nbtcWalletEpoch;
+      nbtcSetBalanceLabel("余额：生成中…");
+      const promise = (async () => {
+        await verifyNbtcDerivationProtocolV1();
+        const wif = await deriveNbtcWifFromNostrSecret(privKeyHex);
+        const derived = await globalThis.NextCrypto.derive(wif);
+        if (!derived.native || !/^bc1q/.test(derived.native)) throw new Error("NBTC Native SegWit 地址生成失败");
+        if (epoch !== nbtcWalletEpoch || owner !== pubKeyHex || !privKeyHex || isLocked) return false;
+        nbtcWalletWif = wif;
+        nbtcWalletAddress = derived.native;
+        nbtcWalletOwnerPk = owner;
+        // Restore the last verified balance before any network request.
+        let restoredBalanceCache = false;
+        try { restoredBalanceCache = await loadNbtcBalanceCache(owner, derived.native); }
+        catch (cacheError) { console.warn("[NBTC] 本地余额缓存读取失败：", cacheError); }
+        if (epoch !== nbtcWalletEpoch || owner !== pubKeyHex || !privKeyHex || isLocked) return false;
+        if (!restoredBalanceCache) {
+          nbtcBalanceSats = null;
+          nbtcSpendableSats = 0n;
+          nbtcMempoolSpentSats = 0n;
+          nbtcPendingSats = 0n;
+          nbtcBalanceLastAt = 0;
+          nbtcSetBalanceLabel("余额：正在获取…");
+        }
+        profiles[owner] || (profiles[owner] = {});
+        profiles[owner].nbtc_address = derived.native;
+        profiles[owner].nbtc_network = "nextbtc";
+        profiles[owner].nbtc_genesis = DGCHAT_NBTC_GENESIS;
+        const ownerAccountIndex = accounts.findIndex(a => a && a.pubkey === owner);
+        if (ownerAccountIndex >= 0) {
+          accounts[ownerAccountIndex].nbtc_address = derived.native;
+          accounts[ownerAccountIndex].nbtc_network = "nextbtc";
+          localStorage.setItem("dage_accounts", JSON.stringify(accounts));
+        }
+        syncLocalEncryptedCache();
+        const addressEl = document.getElementById("nbtc-wallet-address");
+        if (addressEl) addressEl.textContent = derived.native;
+        const livePeerAddressUpdates = nbtcPeerAddresses && typeof nbtcPeerAddresses === "object" ? nbtcPeerAddresses : {};
+        try { nbtcPeerAddresses = Object.assign({}, await loadEncryptedData("nbtc_peer_addresses_v1", {}), livePeerAddressUpdates); } catch { nbtcPeerAddresses = livePeerAddressUpdates; }
+        try { nbtcPeerAddressHistory = await loadEncryptedData("nbtc_peer_address_history_v1", {}); } catch { nbtcPeerAddressHistory = {}; }
+        try { nbtcTxHistory = await loadEncryptedData("nbtc_tx_history_v1", []); } catch { nbtcTxHistory = []; }
+        if (!Array.isArray(nbtcTxHistory)) nbtcTxHistory = [];
+        if (!nbtcPeerAddresses || typeof nbtcPeerAddresses !== "object" || Array.isArray(nbtcPeerAddresses)) nbtcPeerAddresses = {};
+        if (!nbtcPeerAddressHistory || typeof nbtcPeerAddressHistory !== "object" || Array.isArray(nbtcPeerAddressHistory)) nbtcPeerAddressHistory = {};
+        const cleanPeerAddressHistory = {};
+        for (const [peerPk, addresses] of Object.entries(nbtcPeerAddressHistory)) {
+          if (!/^[0-9a-f]{64}$/i.test(peerPk) || !Array.isArray(addresses)) continue;
+          const valid = Array.from(new Set(addresses.filter(a => typeof a === "string" && /^bc1q[0-9a-z]{20,}$/i.test(a) && a === a.toLowerCase()))).slice(-64);
+          if (valid.length) cleanPeerAddressHistory[peerPk] = valid;
+        }
+        nbtcPeerAddressHistory = cleanPeerAddressHistory;
+        for (const [peerPk, address] of Object.entries(nbtcPeerAddresses)) nbtcRememberPeerAddress(peerPk, address);
+        for (const [peerPk, peerProfile] of Object.entries(profiles || {})) {
+          const cachedProfileAddress = nbtcProfileAddressCandidate(peerProfile);
+          if (cachedProfileAddress && !nbtcPeerAddresses[peerPk]) nbtcPeerAddresses[peerPk] = cachedProfileAddress;
+          if (cachedProfileAddress) nbtcRememberPeerAddress(peerPk, cachedProfileAddress);
+        }
+        void saveNbtcPeerAddresses();
+        const apiInput = document.getElementById("nbtc-api-url-network");
+        if (apiInput) {
+          try { apiInput.value = nbtcApiBase(); } catch { apiInput.value = DGCHAT_NBTC_DEFAULT_API; }
+        }
+        if (nbtcBalanceSats === null) nbtcSetBalanceLabel("余额：正在获取…");
+        void ensureNbtcOwnProfilePublished();
+        if (peerPkToViewGlobal === owner && !document.getElementById("peer-profile-modal").classList.contains("hidden")) showPeerProfileModal(owner);
+        // Event-driven policy: refresh once after login/cache restoration; never poll on a timer.
+        void refreshNbtcBalance(false);
+        return true;
+      })();
+      nbtcWalletInitPromise = promise;
+      try { return await promise; }
+      catch (e) {
+        if (epoch === nbtcWalletEpoch) {
+          nbtcWalletWif = null; nbtcWalletAddress = null; nbtcWalletOwnerPk = null;
+          nbtcSetBalanceLabel("余额：暂不可用");
+          console.warn("[NBTC] 钱包初始化失败，聊天不受影响：", e);
+        }
+        return false;
+      }
+    }
+    async function ensureNbtcWalletReady() {
+      if (nbtcWalletOwnerPk === pubKeyHex && nbtcWalletWif && nbtcWalletAddress) return true;
+      if (nbtcWalletInitPromise) return await nbtcWalletInitPromise;
+      return await initializeNbtcWallet();
+    }
+    async function refreshNbtcBalance(showError = false) {
+      if (!privKeyHex || !pubKeyHex || isLocked) return false;
+      if (nbtcBalanceInFlight) return await nbtcBalanceInFlight;
+      if (!(await ensureNbtcWalletReady())) return false;
+      if (!privKeyHex || !pubKeyHex || isLocked) return false;
+      // Coalesce concurrent triggers for the same account; no age-based suppression.
+      if (nbtcBalanceInFlight) return await nbtcBalanceInFlight;
+      const owner = pubKeyHex;
+      const address = nbtcWalletAddress;
+      let currentRequest = null;
+      if (nbtcBalanceSats !== null) {
+        nbtcRenderBalanceSnapshot();
+        nbtcSetBalanceBadge("同步中", "info");
+        nbtcSetWalletStatus("正在同步最新余额 · 上次同步：" + nbtcFormatBalanceSyncTime(nbtcBalanceLastAt), "info");
+      } else {
+        nbtcSetBalanceLabel("余额：正在获取…");
+        nbtcSetBalanceBadge("", "info");
+        nbtcSetWalletStatus("正在获取最新余额…", "info");
+      }
+      currentRequest = (async () => {
+        try {
+          if (owner !== pubKeyHex || isLocked || address !== nbtcWalletAddress) return false;
+          const status = await nbtcCheckStatus(false);
+          if (owner !== pubKeyHex || isLocked || address !== nbtcWalletAddress) return false;
+          const data = await nbtcApiRequest("/api/v1/addresses/query", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ addresses: [address] })
+          });
+          if (owner !== pubKeyHex || isLocked || address !== nbtcWalletAddress) return false;
+          if (Math.abs(Number(status.indexed_height) - Number(data.height)) > 1) throw new Error("余额查询高度与主链状态不一致");
+          const row = (data.results || []).find(x => x.address === address);
+          if (!row) throw new Error("暂时无法获取本钱包地址的数据");
+          const numericFields = ["spendable_sats", "mempool_spent_sats", "unconfirmed_received_sats"];
+          for (const key of numericFields) {
+            const raw = row[key] === undefined || row[key] === null ? "0" : String(row[key]);
+            if (!/^\d{1,24}$/.test(raw)) throw new Error("余额数据格式异常");
+          }
+          // Confirmed balance includes confirmed UTXOs temporarily locked by mempool spends.
+          // Spendable balance remains separate and transaction building still uses fresh UTXOs.
+          const rawSpendableSats = BigInt(String(row.spendable_sats || 0));
+          const rawMempoolSpentSats = BigInt(String(row.mempool_spent_sats || 0));
+          nbtcSpendableSats = rawSpendableSats;
+          nbtcMempoolSpentSats = rawMempoolSpentSats;
+          nbtcBalanceSats = nbtcSpendableSats + nbtcMempoolSpentSats;
+          nbtcPendingSats = BigInt(String(row.unconfirmed_received_sats || 0));
+          nbtcBalanceLastAt = Date.now();
+          nbtcBalanceIndexedHeight = Number.isSafeInteger(Number(data.height)) ? Number(data.height) : null;
+          nbtcBalanceCacheLoadedFor = owner + ":" + address;
+          nbtcSetQuickCertTrust(false);
+          nbtcRenderBalanceSnapshot();
+          nbtcSetBalanceBadge("已同步", "success");
+          nbtcSetWalletStatus("余额已同步 · " + nbtcFormatBalanceSyncTime(nbtcBalanceLastAt), "success");
+          void saveNbtcBalanceCache(owner, address, data.height).catch(e => console.warn("[NBTC] 本地余额缓存保存失败：", e));
+          return true;
+        } catch (e) {
+          if (owner !== pubKeyHex || isLocked) return false;
+          nbtcSetQuickCertTrust(!!e.nbtcTransportFailure);
+          if (nbtcBalanceSats !== null) {
+            nbtcRenderBalanceSnapshot();
+            nbtcSetBalanceBadge("暂未同步", "warning");
+            nbtcSetWalletStatus("暂时无法获取最新余额，显示上次成功同步的数据 · 上次同步：" +
+              nbtcFormatBalanceSyncTime(nbtcBalanceLastAt), "error");
+          } else {
+            nbtcSetBalanceLabel("余额：暂不可用");
+            const modalBalance = document.getElementById("nbtc-wallet-balance");
+            if (modalBalance) modalBalance.textContent = "暂不可用";
+            nbtcSetBalanceBadge("暂不可用", "error");
+            nbtcSetWalletStatus("暂时无法获取最新余额，请稍后重试。", "error");
+          }
+          if (showError) nbtcToast("暂时无法获取最新余额，请稍后重试。", "error");
+          return false;
+        } finally {
+          if (nbtcBalanceInFlight === currentRequest) nbtcBalanceInFlight = null;
+        }
+      })();
+      nbtcBalanceInFlight = currentRequest;
+      return await currentRequest;
+    }
+    async function refreshNbtcBalanceAfterBroadcast() {
+      const owner = pubKeyHex;
+      const pending = nbtcBalanceInFlight;
+      if (pending) {
+        try { await pending; } catch {}
+      }
+      if (!owner || owner !== pubKeyHex || isLocked || !privKeyHex) return false;
+      return await refreshNbtcBalance(false);
+    }
+
+    async function refreshNbtcWallet(showError = false) {
+      const ok = await refreshNbtcBalance(false);
+      const modal = document.getElementById("nbtc-wallet-modal");
+      if (modal && !modal.classList.contains("hidden")) await refreshNbtcHistory(!!showError);
+      if (showError && !ok) nbtcToast("暂时无法获取最新余额，请稍后重试。", "error");
+      return ok;
+    }
+    async function saveNbtcLocalData() {
+      // This key is intentionally local-only. syncBackupToCloud() never includes it.
+      await saveEncryptedData("nbtc_tx_history_v1", nbtcTxHistory.slice(0, 120));
+    }
+    async function saveNbtcPeerAddresses() {
+      // Both current and historical peer-address maps are encrypted in this
+      // browser's IndexedDB; neither is added to Relay cloud backup.
+      await saveEncryptedData("nbtc_peer_addresses_v1", nbtcPeerAddresses);
+      await saveEncryptedData("nbtc_peer_address_history_v1", nbtcPeerAddressHistory);
+    }
+    function nbtcPeerName(pk) {
+      return profiles[pk]?.name || (pk === pubKeyHex ? "我" : nt.nip19.npubEncode(pk).slice(0, 12) + "…");
+    }
+    function renderNbtcPeerPanel() {
+      const panel = document.getElementById("nbtc-peer-panel");
+      if (!panel) return;
+      const pk = nbtcWalletPeerPk;
+      if (!pk || groups[pk] || pk === pubKeyHex) { panel.hidden = true; return; }
+      panel.hidden = false;
+      document.getElementById("nbtc-peer-name").textContent = nbtcPeerName(pk);
+      const address = nbtcPeerAddressFor(pk);
+      const profileAddress = nbtcProfileAddressCandidate(profiles[pk]);
+      const addressCard = document.getElementById("nbtc-peer-address-card");
+      const addressValue = document.getElementById("nbtc-peer-address-value");
+      if (address && addressCard && addressValue) {
+        addressValue.textContent = address;
+        addressCard.hidden = false;
+      } else if (addressCard) {
+        addressCard.hidden = true;
+      }
+      const status = document.getElementById("nbtc-peer-address-status");
+      if (status) {
+        status.textContent = profileAddress
+          ? "已从对方个人资料获取收款地址。"
+          : address
+            ? "当前使用本机保存的收款地址；建议联网刷新确认最新资料。"
+            : "正在读取对方的收款资料…";
+      }
+      if (!address) requestNbtcPeerProfile(pk);
+    }
+    function copyNbtcPeerAddress() {
+      const address = nbtcPeerAddressFor(nbtcWalletPeerPk);
+      if (!address) return nbtcToast("暂时没有对方的收款地址", "info");
+      copyText(address);
+      nbtcToast("对方的 NBTC 收款地址已复制", "success");
+    }
+    function applyNbtcWalletViewMode() {
+      const peerMode = !!(nbtcWalletPeerPk && nbtcWalletPeerPk !== pubKeyHex && !groups[nbtcWalletPeerPk]);
+      const title = document.getElementById("nbtc-wallet-title");
+      const subtitle = document.getElementById("nbtc-wallet-subtitle");
+      const receiveCard = document.getElementById("nbtc-own-receive-card");
+      const peerPanel = document.getElementById("nbtc-peer-panel");
+      const ownerActions = document.getElementById("nbtc-owner-action-row");
+      const privateKeySection = document.getElementById("nbtc-private-key-section");
+      const historyTitle = document.getElementById("nbtc-history-title");
+      const historyCaption = document.getElementById("nbtc-history-caption");
+      const balanceLabel = document.getElementById("nbtc-wallet-balance-label");
+      const pending = document.getElementById("nbtc-wallet-pending");
+      const maintenance = document.getElementById("nbtc-index-settings");
+      if (title) title.textContent = peerMode ? "与 " + nbtcPeerName(nbtcWalletPeerPk) + " 的 NBTC 往来" : "NextBTC 钱包";
+      if (subtitle) subtitle.textContent = peerMode ? "转账与本地往来记录" : "DGChat 内置钱包 · NBTC";
+      if (receiveCard) receiveCard.hidden = peerMode;
+      if (peerPanel) peerPanel.hidden = !peerMode;
+      if (ownerActions) ownerActions.hidden = peerMode;
+      if (privateKeySection) {
+        privateKeySection.hidden = peerMode;
+        if (peerMode) {
+          privateKeySection.open = false;
+          clearNbtcWifPanel();
+        }
+      }
+      if (balanceLabel) balanceLabel.textContent = peerMode ? "我的当前余额" : "链上余额";
+      if (pending) pending.hidden = peerMode;
+      if (historyTitle) historyTitle.textContent = peerMode ? "与此联系人的往来记录" : "最近交易";
+      if (historyCaption) historyCaption.textContent = peerMode
+        ? "自动匹配此联系人的 NBTC 地址往来记录"
+        : "最近的收付款记录";
+      if (maintenance && peerMode) { maintenance.open = false; maintenance.hidden = true; }
+      if (title) title.onclick = peerMode ? null : nbtcHandleMaintenanceTap;
+      const modal = document.getElementById("nbtc-wallet-modal");
+      if (modal) modal.dataset.viewMode = peerMode ? "peer" : "owner";
+      if (peerMode) renderNbtcPeerPanel();
+    }
+    function openNbtcWalletModal(peerPk = null) {
+      resetNbtcMaintenanceTapSequence();
+      if (!privKeyHex || !pubKeyHex || isLocked) return nbtcToast("请先解锁 DGChat 账户", "info");
+      nbtcWalletPeerPk = peerPk && !groups[peerPk] && peerPk !== pubKeyHex ? peerPk : null;
+      nbtcHistoryFilterPk = nbtcWalletPeerPk;
+      applyNbtcWalletViewMode();
+      const modal = document.getElementById("nbtc-wallet-modal");
+      const alreadyOpen = !!(modal && !modal.classList.contains("hidden"));
+      if (!alreadyOpen) {
+        modal.classList.remove("hidden");
+        try { ModalManager.push("nbtcWallet", closeNbtcWalletModal); }
+        catch (historyError) { console.warn("[NBTC] 钱包已打开，但浏览器历史状态不可用：", historyError); }
+      }
+      if (nbtcWalletAddress) document.getElementById("nbtc-wallet-address").textContent = nbtcWalletAddress;
+      else document.getElementById("nbtc-wallet-address").textContent = "正在生成…";
+      const apiInput = document.getElementById("nbtc-api-url-network");
+      if (apiInput) { try { apiInput.value = nbtcApiBase(); } catch { apiInput.value = DGCHAT_NBTC_DEFAULT_API; } }
+      renderNbtcRecipientBook("");
+      renderNbtcPeerPanel();
+      if (nbtcWalletPeerPk && !nbtcPeerAddressFor(nbtcWalletPeerPk)) requestNbtcPeerProfile(nbtcWalletPeerPk);
+      if (nbtcBalanceSats !== null) {
+        nbtcRenderBalanceSnapshot();
+        nbtcSetBalanceBadge("缓存", "warning");
+        nbtcSetWalletStatus("显示本地缓存 · 正在同步最新余额…", "info");
+      } else {
+        nbtcSetBalanceBadge("", "info");
+        nbtcSetWalletStatus("正在获取最新余额…", "info");
+      }
+      // Each explicit entry into the owner wallet or a peer NBTC view is a one-shot refresh.
+      // An already-running login/refresh request is reused instead of duplicated.
+      void refreshNbtcWallet(false);
+    }
+    // The NBTC chat entry is wired by the isolated click bridge after this main script.
+    // Keep a global alias for compatibility with other existing UI actions.
+    window.openNbtcWalletModal = openNbtcWalletModal;
+
+    function closeNbtcWalletModal(fromPopState = false) {
+      resetNbtcMaintenanceTapSequence();
+      document.getElementById("nbtc-wallet-modal").classList.add("hidden");
+      const maintenance = document.getElementById("nbtc-index-settings");
+      if (maintenance) { maintenance.open = false; maintenance.hidden = true; }
+      clearNbtcWifPanel();
+      if (!fromPopState) ModalManager.pop("nbtcWallet");
+    }
+    function copyNbtcWalletAddress() {
+      if (!nbtcWalletAddress) return;
+      copyText(nbtcWalletAddress);
+      nbtcToast("NBTC 收款地址已复制", "success");
+    }
+    function showNbtcReceiveQr() {
+      if (!nbtcWalletAddress) return nbtcToast("钱包尚未初始化", "error");
+      showQrCode("NextBTC 收款二维码", nbtcWalletAddress, "请确认付款方使用 NextBTC 网络 · NBTC");
+    }
+    function getNbtcApiSettingsInput() {
+      return document.getElementById("nbtc-api-url-network");
+    }
+    function syncNbtcApiSettingsInput(value) {
+      const input = getNbtcApiSettingsInput();
+      if (input) input.value = value;
+    }
+    function saveNbtcApiSetting() {
+      try {
+        const input = getNbtcApiSettingsInput();
+        if (!input) throw new Error("找不到服务地址设置项");
+        const value = nbtcNormalizeApi(input.value);
+        localStorage.setItem(nbtcApiStorageKey(), value);
+        syncNbtcApiSettingsInput(value);
+        nbtcBalanceLastAt = 0;
+        if (nbtcWalletModalIsOpen()) void refreshNbtcBalance(false);
+        nbtcToast("服务地址已保存", "success");
+        nbtcSetWalletStatus("设置已保存", "info");
+        const state = document.getElementById("nbtc-network-connection-state");
+        if (state) { state.textContent = "已保存"; state.className = "text-[10px] text-gray-400"; }
+      } catch (e) { nbtcToast(e.message, "error"); }
+    }
+    async function testNbtcApiSetting() {
+      const result = document.getElementById("nbtc-network-test-result");
+      const state = document.getElementById("nbtc-network-connection-state");
+      try {
+        const input = getNbtcApiSettingsInput();
+        if (!input) throw new Error("找不到服务地址设置项");
+        const value = nbtcNormalizeApi(input.value);
+        localStorage.setItem(nbtcApiStorageKey(), value);
+        syncNbtcApiSettingsInput(value);
+        if (result) result.textContent = "正在连接并验证 NextBTC 主网…";
+        const status = await nbtcCheckStatus(false);
+        if (status.genesis !== DGCHAT_NBTC_GENESIS) throw new Error("NextBTC 主网校验失败");
+        nbtcSetQuickCertTrust(false);
+        if (state) { state.textContent = "连接正常"; state.className = "text-[10px] text-green-600 dark:text-green-400"; }
+        if (result) result.textContent = "连接正常，余额可以同步。";
+        nbtcToast("连接正常", "success");
+        await refreshNbtcBalance(false);
+      } catch (e) {
+        nbtcSetQuickCertTrust(!!e.nbtcTransportFailure);
+        if (state) { state.textContent = "连接失败"; state.className = "text-[10px] text-red-500"; }
+        if (result) result.textContent = "连接失败：" + (e.message || e);
+        nbtcToast("暂时无法连接，请检查服务地址或证书。", "error");
+      }
+    }
+    const nbtcTrustCertButton = document.getElementById("nbtc-trust-cert");
+    if (nbtcTrustCertButton) nbtcTrustCertButton.addEventListener("click", openNbtcCertificateCheck);
+    const nbtcTrustCertNetworkButton = document.getElementById("nbtc-trust-cert-network");
+    if (nbtcTrustCertNetworkButton) nbtcTrustCertNetworkButton.addEventListener("click", openNbtcCertificateCheck);
+
+    function openNbtcSendModal(peerPk = null) {
+      if (!privKeyHex || !pubKeyHex || isLocked) return nbtcToast("请先解锁 DGChat 账户", "info");
+      if (groups[peerPk]) return nbtcToast("暂不支持群聊转账", "info");
+      nbtcPendingDraft = null;
+      nbtcBroadcastBusy = false;
+      nbtcWalletPeerPk = peerPk && peerPk !== pubKeyHex ? peerPk : null;
+      const addressInput = document.getElementById("nbtc-send-address");
+      const status = document.getElementById("nbtc-send-peer-status");
+      const statusLine = document.getElementById("nbtc-send-status");
+      document.getElementById("nbtc-send-amount").value = "";
+      nbtcResetFeeSelection();
+      document.getElementById("nbtc-send-preview").classList.add("hidden");
+      statusLine.textContent = "";
+      if (nbtcWalletPeerPk) {
+        const address = nbtcPeerAddressFor(nbtcWalletPeerPk);
+        addressInput.value = address || "";
+        status.classList.remove("hidden");
+        status.textContent = address
+          ? "已从对方个人资料获取收款地址，请核对后再转账。"
+          : "正在读取对方的个人资料…如果暂时无法获取，也可以手动填写地址。";
+        if (!address) {
+          const requested = requestNbtcPeerProfile(nbtcWalletPeerPk, true);
+          if (!requested) status.textContent = "暂时无法读取对方的个人资料，你可以稍后重试或手动填写地址。";
+        } else void acceptNbtcPeerAddress(nbtcWalletPeerPk, address);
+      } else {
+        addressInput.value = "";
+        status.classList.add("hidden");
+      }
+      document.getElementById("nbtc-send-modal").classList.remove("hidden");
+      ModalManager.push("nbtcSend", closeNbtcSendModal);
+      void refreshNbtcFeeSuggestions(false);
+    }
+    function closeNbtcSendModal(fromPopState = false) {
+      document.getElementById("nbtc-send-modal").classList.add("hidden");
+      nbtcPendingDraft = null;
+      nbtcBroadcastBusy = false;
+      document.getElementById("nbtc-send-preview").classList.add("hidden");
+      if (!fromPopState) ModalManager.pop("nbtcSend");
+    }
+    function cancelNbtcPreview() {
+      nbtcPendingDraft = null;
+      document.getElementById("nbtc-send-preview").classList.add("hidden");
+      document.getElementById("nbtc-send-status").textContent = "请修改参数后重新预览。";
+    }
+    function clearNbtcPreviewOnEdit() {
+      if (nbtcPendingDraft) cancelNbtcPreview();
+    }
+    async function previewNbtcTransfer() {
+      const button = document.getElementById("nbtc-preview-button");
+      if (button.disabled) return;
+      button.disabled = true;
+      nbtcPendingDraft = null;
+      document.getElementById("nbtc-send-preview").classList.add("hidden");
+      const statusLine = document.getElementById("nbtc-send-status");
+      statusLine.textContent = "正在检查网络并准备转账，请稍候…";
+      try {
+        if (!(await ensureNbtcWalletReady())) throw new Error("NBTC 钱包尚未就绪");
+        const to = document.getElementById("nbtc-send-address").value.trim();
+        const amount = document.getElementById("nbtc-send-amount").value.trim();
+        const feeRate = nbtcGetSelectedFeeRate();
+        if (!to) throw new Error("请输入收款地址");
+        await globalThis.NextCrypto.validateAddress(to);
+        const status = await nbtcCheckStatus(true);
+        const data = await nbtcApiRequest("/api/v1/addresses/query", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ addresses: [nbtcWalletAddress] })
+        });
+        if (Math.abs(Number(status.indexed_height) - Number(data.height)) > 1) throw new Error("网络数据状态不一致，请重新查询");
+        const row = (data.results || []).find(x => x.address === nbtcWalletAddress);
+        if (!row || !Array.isArray(row.utxos)) throw new Error("暂时无法获取可用的转账数据");
+        const built = await globalThis.NextTx.build({
+          wif: nbtcWalletWif,
+          results: [row],
+          to,
+          amount,
+          feeRate,
+          changeAddress: nbtcWalletAddress,
+          types: ["native"]
+        });
+        if (!built || !built.hex || !/^[0-9a-f]+$/i.test(built.hex) || !/^[0-9a-f]{64}$/i.test(built.txid)) throw new Error("本地交易构建结果异常");
+        nbtcPendingDraft = { built, to, amount, feeRate, indexHeight: status.indexed_height, contactPk: nbtcWalletPeerPk, createdAt: Date.now() };
+        document.getElementById("nbtc-preview-address").textContent = to;
+        document.getElementById("nbtc-preview-amount").textContent = nbtcFormatSats(built.amount_sats) + " NBTC";
+        document.getElementById("nbtc-preview-fee-rate").textContent = nbtcFormatFeeRate(feeRate) + " sat/vB";
+        document.getElementById("nbtc-preview-fee").textContent = nbtcFormatSats(built.fee_sats) + " NBTC";
+        document.getElementById("nbtc-preview-total").textContent = nbtcFormatSats(BigInt(built.amount_sats) + BigInt(built.fee_sats)) + " NBTC";
+        document.getElementById("nbtc-preview-txid").textContent = built.txid;
+        document.getElementById("nbtc-send-preview").classList.remove("hidden");
+        statusLine.textContent = "转账已准备好，尚未发送。请仔细核对收款地址、金额和手续费。";
+      } catch (e) {
+        nbtcSetQuickCertTrust(!!e.nbtcTransportFailure);
+        statusLine.textContent = "预览失败：" + (e.message || e);
+        nbtcToast("NBTC 交易预览失败：" + (e.message || e), "error");
+      } finally { button.disabled = false; }
+    }
+    async function broadcastNbtcTransfer() {
+      if (!nbtcPendingDraft || nbtcBroadcastBusy) return;
+      nbtcBroadcastBusy = true;
+      const button = document.getElementById("nbtc-broadcast-button");
+      button.disabled = true;
+      const draft = nbtcPendingDraft;
+      const built = draft.built;
+      let broadcastAttempted = false;
+      const localRecord = {
+        txid: built.txid,
+        direction: "outgoing",
+        amount_sats: String(built.amount_sats),
+        fee_sats: String(built.fee_sats),
+        net_sats: String(-(BigInt(built.amount_sats) + BigInt(built.fee_sats))),
+        recipient_address: draft.to,
+        contact_pubkey: draft.contactPk || "",
+        contact_name: draft.contactPk ? nbtcPeerName(draft.contactPk) : "",
+        timestamp: Math.floor(Date.now() / 1000),
+        unconfirmed: true,
+        state: "broadcast_unknown",
+        source: "local"
+      };
+      try {
+        document.getElementById("nbtc-send-status").textContent = "正在再次检查网络状态并发送交易…";
+        const status = await nbtcCheckStatus(true);
+        if (Math.abs(Number(status.indexed_height) - Number(draft.indexHeight)) > 1) throw new Error("预览后链索引高度已变化，请重新预览交易");
+        // Persist only to this browser immediately before POST; never publish transaction records to Relay.
+        nbtcTxHistory = [localRecord, ...nbtcTxHistory.filter(x => x.txid !== localRecord.txid)].slice(0, 120);
+        try { await saveNbtcLocalData(); } catch (e) { console.warn("[NBTC] 本地交易记录保存失败：", e); }
+        broadcastAttempted = true;
+        const response = await nbtcApiRequest("/api/v1/broadcast", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ hex: built.hex })
+        });
+        if (!response.txid || String(response.txid).toLowerCase() !== built.txid.toLowerCase()) throw new Error("广播返回的 服务器返回的交易编号校验不一致，已停止处理");
+        localRecord.state = "broadcast";
+        localRecord.unconfirmed = true;
+        nbtcTxHistory = [localRecord, ...nbtcTxHistory.filter(x => x.txid !== localRecord.txid)].slice(0, 120);
+        try { await saveNbtcLocalData(); } catch (e) { console.warn("[NBTC] 广播后本地记录保存失败：", e); }
+        document.getElementById("nbtc-send-status").textContent = "交易已提交，等待区块确认。交易编号：" + built.txid;
+        nbtcToast("NBTC 交易已广播，等待区块确认", "success");
+        nbtcPendingDraft = null;
+        document.getElementById("nbtc-send-preview").classList.add("hidden");
+        nbtcHistoryLastAt = 0;
+        // A successful broadcast is a balance-change event: perform one fresh query only.
+        // Do not poll transaction status or balance in the background afterwards.
+        await refreshNbtcBalanceAfterBroadcast();
+        await refreshNbtcHistory(true);
+        setTimeout(() => { if (!document.getElementById("nbtc-send-modal").classList.contains("hidden")) closeNbtcSendModal(); }, 1800);
+      } catch (e) {
+        nbtcSetQuickCertTrust(!!e.nbtcTransportFailure);
+        if (broadcastAttempted) {
+          localRecord.state = "broadcast_unknown";
+          nbtcTxHistory = [localRecord, ...nbtcTxHistory.filter(x => x.txid !== localRecord.txid)].slice(0, 120);
+          try { await saveNbtcLocalData(); } catch {}
+          document.getElementById("nbtc-send-status").textContent = "广播状态未确认：" + (e.message || e) + "。请先按交易编号查询，不要重复支付。交易编号：" + built.txid;
+          nbtcToast("发送状态暂未确认，请先查询交易状态，勿重复发送", "error");
+        } else {
+          document.getElementById("nbtc-send-status").textContent = "发送前检查未通过：" + (e.message || e) + "。请重新预览后再试。";
+          nbtcToast("NBTC 发送前检查未通过：" + (e.message || e), "error");
+        }
+        // A signed draft is never reusable after a failed/ambiguous attempt.
+        nbtcPendingDraft = null;
+        document.getElementById("nbtc-send-preview").classList.add("hidden");
+      } finally {
+        nbtcBroadcastBusy = false;
+        button.disabled = false;
+      }
+    }
+
+    function nbtcRenderHistory(list, contactPk = null) {
+      const holder = document.getElementById("nbtc-history-list");
+      if (!holder) return;
+      holder.replaceChildren();
+      if (nbtcAssociateHistoryContacts(list || [])) void saveNbtcLocalData().catch(e => console.warn("[NBTC] 本地联系人关联缓存保存失败：", e));
+      const rows = (list || []).filter(x => !contactPk || nbtcHistoryMatchesContact(x, contactPk)).slice(0, 30);
+      if (!rows.length) {
+        const empty = document.createElement("div");
+        empty.className = "text-xs text-gray-400 py-3 text-center";
+        empty.textContent = contactPk ? "当前设备没有匹配到此联系人的 NBTC 往来记录。地址匹配不代表付款人身份已验证。" : "暂无可显示的交易记录。";
+        holder.append(empty);
+        return;
+      }
+      for (const tx of rows) {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "w-full text-left flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 border border-transparent hover:border-gray-100 dark:hover:border-gray-700";
+        const icon = document.createElement("span");
+        icon.className = "w-7 h-7 rounded-full flex items-center justify-center text-xs " + (tx.direction === "incoming" ? "bg-green-50 text-green-600 dark:bg-green-900/30" : "bg-gray-100 text-gray-500 dark:bg-gray-800");
+        icon.textContent = tx.direction === "incoming" ? "↓" : "↑";
+        const center = document.createElement("span");
+        center.className = "flex-1 min-w-0";
+        const title = document.createElement("span");
+        title.className = "block text-xs font-medium text-gray-700 dark:text-gray-200 truncate";
+        const matchedPeers = Array.isArray(tx.matched_contact_pubkeys) ? tx.matched_contact_pubkeys : [];
+        const displayPeerName = contactPk ? nbtcPeerName(contactPk) : (matchedPeers.length === 1 ? nbtcPeerName(matchedPeers[0]) : matchedPeers.length > 1 ? "多个联系人" : tx.contact_name);
+        title.textContent = displayPeerName ? (tx.direction === "incoming" ? "收到 NBTC · " : "发送 NBTC · ") + displayPeerName : (tx.direction === "incoming" ? "收到 NBTC" : tx.direction === "outgoing" ? "链上支出" : "交易记录");
+        const meta = document.createElement("span");
+        meta.className = "block text-[10px] text-gray-400 truncate";
+        const time = Number(tx.timestamp || tx.time || 0);
+        const addressMatched = !!contactPk && matchedPeers.includes(contactPk) && tx.contact_pubkey !== contactPk;
+        const matchHint = addressMatched ? (tx.direction === "incoming" ? " · 输入地址匹配（付款人未验证）" : " · 收款地址匹配") : "";
+        meta.textContent = (tx.unconfirmed || tx.state === "broadcast" || tx.state === "broadcast_unknown" ? "待确认" : "已确认") + (time ? " · " + new Date(time * 1000).toLocaleString() : "") + matchHint;
+        center.append(title, meta);
+        const amount = document.createElement("strong");
+        amount.className = "text-xs tabular-nums whitespace-nowrap " + (tx.direction === "incoming" ? "text-green-600" : "text-gray-600 dark:text-gray-300");
+        const sats = tx.amount_sats || (tx.net_sats ? String(Math.abs(Number(tx.net_sats))) : "0");
+        amount.textContent = (tx.direction === "incoming" ? "+" : "-") + nbtcFormatSats(sats) + " NBTC";
+        item.append(icon, center, amount);
+        item.addEventListener("click", () => openNbtcTxDetail(tx.txid));
+        holder.append(item);
+      }
+    }
+    async function refreshNbtcHistory(force = false) {
+      const holder = document.getElementById("nbtc-history-list");
+      if (!holder || !nbtcWalletAddress || !privKeyHex || isLocked) return false;
+      nbtcRenderHistory(nbtcTxHistory, nbtcHistoryFilterPk);
+      if (!force && nbtcHistoryLastAt && Date.now() - nbtcHistoryLastAt < 30000) return true;
+      try {
+        await nbtcCheckStatus(false);
+        const data = await nbtcApiRequest("/api/v1/history/" + encodeURIComponent(nbtcWalletAddress) + "?limit=100&offset=0&include_flow=1");
+        const map = new Map();
+        for (const old of nbtcTxHistory) if (old && old.txid) map.set(old.txid, old);
+        for (const row of data.transactions || []) {
+          if (!row || !/^[0-9a-f]{64}$/i.test(String(row.txid || ""))) continue;
+          const old = map.get(row.txid) || {};
+          const net = Number(row.net_sats || 0);
+          map.set(row.txid, {
+            ...old,
+            txid: row.txid,
+            direction: net > 0 ? "incoming" : net < 0 ? "outgoing" : (old.direction || "neutral"),
+            amount_sats: old.amount_sats || String(Math.abs(net)),
+            net_sats: String(net),
+            received_sats: String(row.received_sats || 0),
+            sent_sats: String(row.sent_sats || 0),
+            timestamp: Number(row.timestamp || row.time || old.timestamp || 0),
+            height: Number(row.height || 0),
+            unconfirmed: !!row.unconfirmed,
+            input_addresses: Array.isArray(row.input_addresses) ? row.input_addresses : (old.input_addresses || []),
+            output_addresses: Array.isArray(row.output_addresses) ? row.output_addresses : (old.output_addresses || []),
+            state: row.unconfirmed ? "mempool" : "confirmed"
+          });
+        }
+        nbtcTxHistory = [...map.values()].sort((a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0)).slice(0, 120);
+        nbtcAssociateHistoryContacts(nbtcTxHistory);
+        nbtcHistoryLastAt = Date.now();
+        try { await saveNbtcLocalData(); } catch (e) { console.warn("[NBTC] 交易历史缓存写入失败：", e); }
+        nbtcRenderHistory(nbtcTxHistory, nbtcHistoryFilterPk);
+        const caption = document.getElementById("nbtc-history-caption");
+        if (caption) caption.textContent = "交易记录已更新；好友关联仅保存在本机";
+        return true;
+      } catch (e) {
+        nbtcSetQuickCertTrust(!!e.nbtcTransportFailure);
+        nbtcHistoryLastAt = Date.now();
+        nbtcRenderHistory(nbtcTxHistory, nbtcHistoryFilterPk);
+        const caption = document.getElementById("nbtc-history-caption");
+        if (caption) caption.textContent = nbtcTxHistory.length ? "暂时无法更新，当前显示本地记录" : "暂时无法获取交易记录";
+        return false;
+      }
+    }
+    async function openNbtcTxDetail(txid) {
+      const detail = document.getElementById("nbtc-tx-detail");
+      const body = document.getElementById("nbtc-tx-detail-body");
+      const row = nbtcTxHistory.find(x => x.txid === txid) || {};
+      detail.classList.remove("hidden");
+      body.textContent = "正在查询交易状态…";
+      let status = null;
+      try { status = await nbtcApiRequest("/api/v1/tx/" + encodeURIComponent(txid)); } catch {}
+      const parts = [];
+      parts.push("交易编号：" + txid);
+      if (row.direction) parts.push("方向：" + (row.direction === "incoming" ? "收入" : "支出"));
+      if (row.amount_sats) parts.push("记录金额：" + nbtcFormatSats(row.amount_sats) + " NBTC");
+      if (row.fee_sats) parts.push("矿工手续费：" + nbtcFormatSats(row.fee_sats) + " NBTC");
+      if (row.contact_pubkey) parts.push("发送时选择联系人：" + nbtcPeerName(row.contact_pubkey));
+      if (row.recipient_address) parts.push("收款地址：" + row.recipient_address);
+      const addressMatchedNames = (Array.isArray(row.matched_contact_pubkeys) ? row.matched_contact_pubkeys : [])
+        .filter(pk => pk !== row.contact_pubkey).map(pk => nbtcPeerName(pk));
+      if (addressMatchedNames.length) parts.push("地址匹配联系人：" + addressMatchedNames.join("、"));
+      if (row.direction === "incoming" && addressMatchedNames.length) parts.push("关联依据：交易输入包含联系人的公开 NBTC 地址；这不等同于付款人身份验证。");
+      if (row.direction === "outgoing" && addressMatchedNames.length) parts.push("关联依据：交易收款地址与联系人的公开 NBTC 地址匹配。");
+      if (Array.isArray(row.input_addresses) && row.input_addresses.length) parts.push("输入地址：" + row.input_addresses.slice(0, 12).join("、") + (row.input_addresses.length > 12 ? " 等" : ""));
+      if (Array.isArray(row.output_addresses) && row.output_addresses.length) parts.push("输出地址：" + row.output_addresses.slice(0, 12).join("、") + (row.output_addresses.length > 12 ? " 等" : ""));
+      if (status) {
+        parts.push("链上状态：" + (status.state === "confirmed" ? "已确认" : status.state === "mempool" ? "内存池待确认" : status.state === "not_found" ? "索引暂未找到" : String(status.state || "未知")));
+        if (status.height !== undefined) parts.push("区块高度：" + status.height);
+        if (status.block_hash) parts.push("区块哈希：" + status.block_hash);
+        if (status.confirmations !== undefined) parts.push("确认数：" + status.confirmations);
+        if (status.timestamp || row.timestamp) parts.push("交易时间：" + new Date(Number(status.timestamp || row.timestamp) * 1000).toLocaleString());
+      } else {
+        parts.push("链上状态：暂时无法查询（保留本地记录）");
+        if (row.timestamp) parts.push("本地记录时间：" + new Date(Number(row.timestamp) * 1000).toLocaleString());
+      }
+      body.textContent = parts.join("\n");
+    }
+
+    async function sendNbtcProtocol(peerPk, payload) {
+      if (!peerPk || !/^[0-9a-f]{64}$/i.test(peerPk) || peerPk === pubKeyHex || groups[peerPk]) throw new Error("无效的私聊联系人");
+      if (!(await ensureNbtcWalletReady())) throw new Error("NBTC 钱包尚未就绪");
+      const data = { _dgchat_nbtc: 1, version: 1, chain: "nextBTC", genesis: DGCHAT_NBTC_GENESIS, ...payload };
+      const encrypted = await pythonNip44Encrypt(privKeyHex, peerPk, JSON.stringify(data));
+      const randomTag = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, "0")).join("");
+      const d = "dgchat_nbtc_wallet_v1:" + randomTag;
+      const expires = String(Math.floor(Date.now() / 1000) + 30 * 86400);
+      return await publishEvent(30078, encrypted, [["d", d], ["p", peerPk], ["expiration", expires]]);
+    }
+    async function acceptNbtcPeerAddress(peerPk, address) {
+      if (!peerPk || peerPk === pubKeyHex || groups[peerPk] || typeof address !== "string" || !/^bc1q/i.test(address)) return false;
+      try {
+        await globalThis.NextCrypto.validateAddress(address);
+        if (!privKeyHex || isLocked) return false;
+        nbtcRememberPeerAddress(peerPk, address);
+        nbtcPeerAddresses[peerPk] = address;
+        await saveNbtcPeerAddresses();
+        if (nbtcWalletPeerPk === peerPk) renderNbtcPeerPanel();
+        if (document.getElementById("nbtc-send-modal") && !document.getElementById("nbtc-send-modal").classList.contains("hidden") && nbtcWalletPeerPk === peerPk) {
+          const sendAddress = document.getElementById("nbtc-send-address");
+          if (sendAddress && (!sendAddress.value.trim() || sendAddress.value.trim() === address)) sendAddress.value = address;
+          document.getElementById("nbtc-send-peer-status").textContent = "已获取 " + nbtcPeerName(peerPk) + " 的 NBTC 收款地址，请核对后再转账。";
+        }
+        return true;
+      } catch (e) {
+        console.warn("[NBTC] 拒绝无效的联系人收款地址：", e);
+        return false;
+      }
+    }
+    function handleNbtcProtocolMessage(peerPk, senderPk, decryptedText) {
+      let data;
+      try { data = typeof decryptedText === "string" ? JSON.parse(decryptedText) : decryptedText; } catch { return false; }
+      if (!data || data._dgchat_nbtc !== 1) return false;
+      // Recognized wallet protocol messages are never rendered as ordinary chat messages.
+      if (data.version !== 1 || data.chain !== "nextBTC" || data.genesis !== DGCHAT_NBTC_GENESIS) return true;
+      if (!senderPk || senderPk === pubKeyHex || !/^[0-9a-f]{64}$/i.test(senderPk) || groups[senderPk]) return true;
+      if (data.action === "request_address") {
+        const last = Number(nbtcPeerResponseAt[senderPk] || 0);
+        if (Date.now() - last > 30000) {
+          void ensureNbtcWalletReady().then(async () => {
+            await sendNbtcProtocol(senderPk, { action: "share_address", address: nbtcWalletAddress });
+            nbtcPeerResponseAt[senderPk] = Date.now();
+          }).catch(e => console.warn("[NBTC] 回复收款地址失败：", e));
+        }
+        return true;
+      }
+      if (data.action === "share_address") {
+        if (contacts.includes(senderPk) || currentChatPk === senderPk) void acceptNbtcPeerAddress(senderPk, data.address);
+        return true;
+      }
+      return true;
+    }
+    function showNbtcWifPanel(realSk) {
+      if (!privKeyHex || !nbtcWalletWif || realSk !== privKeyHex) return nbtcToast("账户验证状态不匹配，请重新登录后再试", "error");
+      const panel = document.getElementById("nbtc-wif-panel");
+      const field = document.getElementById("nbtc-wif-value");
+      field.value = nbtcWalletWif;
+      panel.classList.remove("hidden");
+      if (nbtcWifHideTimer) clearTimeout(nbtcWifHideTimer);
+      nbtcWifHideTimer = setTimeout(clearNbtcWifPanel, 60000);
+    }
+    function copyNbtcWif() {
+      const field = document.getElementById("nbtc-wif-value");
+      if (!field || !field.value) return;
+      copyText(field.value);
+      nbtcToast("NBTC WIF 已复制。请勿发送给他人或上传云端。", "warning");
+    }
+    function downloadNbtcWif() {
+      const field = document.getElementById("nbtc-wif-value");
+      if (!field || !field.value) return;
+      const blob = new Blob([field.value + "\n"], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "DGChat_NBTC_WIF_BACKUP.txt";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    // V0.5.49-inspired local recipient address book. Addresses/labels are public metadata;
+    // this list is scoped to the active Nostr account and never sent to Relay or Index Server.
+    function nbtcRecipientBookKey() { return "dage_nbtc_recipient_book_v1_" + (pubKeyHex || "default"); }
+    function loadNbtcRecipientBook() {
+      try {
+        const rows = JSON.parse(localStorage.getItem(nbtcRecipientBookKey()) || "[]");
+        return Array.isArray(rows) ? rows.filter(x => x && typeof x.address === "string" && x.address.length >= 26 && x.address.length <= 90 && typeof x.label === "string").slice(0, 100) : [];
+      } catch { return []; }
+    }
+    function renderNbtcRecipientBook(selectedAddress = "") {
+      const select = document.getElementById("nbtc-recipient-book");
+      if (!select) return;
+      const rows = loadNbtcRecipientBook();
+      select.replaceChildren();
+      const placeholder = document.createElement("option");
+      placeholder.value = ""; placeholder.textContent = rows.length ? "常用收款地址" : "暂无常用地址";
+      select.append(placeholder);
+      for (const row of rows) {
+        const option = document.createElement("option");
+        option.value = row.address;
+        option.textContent = row.label + " · " + row.address.slice(0, 10) + "…" + row.address.slice(-5);
+        select.append(option);
+      }
+      select.value = rows.some(x => x.address === selectedAddress) ? selectedAddress : "";
+    }
+    function openNbtcRecipientEditor() {
+      const address = document.getElementById("nbtc-send-address").value.trim();
+      if (!address) { nbtcToast("请先填写收款地址，再保存为常用地址", "info"); document.getElementById("nbtc-send-address").focus(); return; }
+      const editor = document.getElementById("nbtc-recipient-editor");
+      editor.hidden = false;
+      document.getElementById("nbtc-recipient-label").focus();
+    }
+    async function saveNbtcRecipient() {
+      const address = document.getElementById("nbtc-send-address").value.trim();
+      const label = document.getElementById("nbtc-recipient-label").value.trim();
+      if (!address) return nbtcToast("请先填写收款地址", "error");
+      if (!label) { document.getElementById("nbtc-recipient-label").focus(); return nbtcToast("请输入地址标签", "error"); }
+      try { await globalThis.NextCrypto.validateAddress(address); }
+      catch (e) { return nbtcToast("收款地址无效：" + (e.message || e), "error"); }
+      const rows = loadNbtcRecipientBook();
+      const index = rows.findIndex(x => x.address === address);
+      const entry = { label: label.slice(0, 32), address };
+      if (index >= 0) rows[index] = entry; else rows.unshift(entry);
+      try { localStorage.setItem(nbtcRecipientBookKey(), JSON.stringify(rows.slice(0, 100))); }
+      catch { return nbtcToast("浏览器存储空间不足，未能保存地址", "error"); }
+      renderNbtcRecipientBook(address);
+      document.getElementById("nbtc-recipient-editor").hidden = true;
+      document.getElementById("nbtc-recipient-label").value = "";
+      nbtcToast("已保存为常用收款地址", "success");
+    }
+    document.getElementById("nbtc-recipient-book").addEventListener("change", () => {
+      const address = document.getElementById("nbtc-recipient-book").value;
+      if (address) {
+        document.getElementById("nbtc-send-address").value = address;
+        clearNbtcPreviewOnEdit();
+      }
+    });
+    document.getElementById("nbtc-show-save-recipient").addEventListener("click", openNbtcRecipientEditor);
+    document.getElementById("nbtc-save-recipient").addEventListener("click", () => { void saveNbtcRecipient(); });
+    document.getElementById("nbtc-cancel-save-recipient").addEventListener("click", () => {
+      document.getElementById("nbtc-recipient-editor").hidden = true;
+      document.getElementById("nbtc-recipient-label").value = "";
+    });
+    document.getElementById("nbtc-send-address").addEventListener("input", () => renderNbtcRecipientBook(""));
+    renderNbtcRecipientBook();
+    nbtcBindFeeControls();
+
+    ["nbtc-send-address", "nbtc-send-amount", "nbtc-send-fee"].forEach(id => {
+      const field = document.getElementById(id);
+      if (field) field.addEventListener("input", clearNbtcPreviewOnEdit);
+    });
+
+</script>
+<script id="dgchat-nbtc-click-bridge">
+/*
+ * Isolated NBTC entry bridge.
+ * This script is deliberately placed after the large DGChat application script:
+ * even if a late initializer in the main script throws, this handler is still installed.
+ * The main script's top-level lexical bindings (privKeyHex/currentChatPk/isLocked) remain
+ * accessible to subsequent classic scripts in the same global environment.
+ */
+(function () {
+  function showBridgeError(message, kind) {
+    try {
+      if (typeof nbtcToast === "function") {
+        nbtcToast(message, kind || "error");
+        return;
+      }
+    } catch (toastError) {
+      console.error("[NBTC] toast fallback failed:", toastError);
+    }
+    let node = document.getElementById("dgchat-nbtc-bridge-error");
+    if (!node) {
+      node = document.createElement("div");
+      node.id = "dgchat-nbtc-bridge-error";
+      node.style.cssText = "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99999;max-width:90vw;padding:10px 14px;border-radius:9px;background:#991b1b;color:white;font-size:12px;box-shadow:0 8px 24px #0005";
+      document.body.appendChild(node);
+    }
+    node.textContent = message;
+    node.hidden = false;
+    clearTimeout(node.__hideTimer);
+    node.__hideTimer = setTimeout(() => { node.hidden = true; }, 3500);
+  }
+
+  if (typeof openNbtcWalletModal === "function") {
+    window.openNbtcWalletModal = openNbtcWalletModal;
+  }
+
+  window.dgchatNbtcOpenClick = function (event, useCurrentPeer = true) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    try {
+      if (typeof openNbtcWalletModal !== "function") {
+        throw new Error("钱包模块尚未完成加载。请刷新页面；如果仍然出现，请将控制台错误信息反馈给开发者。");
+      }
+      if (typeof privKeyHex === "undefined" || !privKeyHex || !pubKeyHex || isLocked) {
+        showBridgeError("请先解锁 DGChat 账户，再打开 NBTC 钱包。", "info");
+        return false;
+      }
+      const modal = document.getElementById("nbtc-wallet-modal");
+      if (!modal) throw new Error("找不到 NBTC 钱包窗口（nbtc-wallet-modal）。");
+
+      // Call the real wallet entry point with the currently selected private-chat peer.
+      openNbtcWalletModal(useCurrentPeer ? (currentChatPk || null) : null);
+
+      // Defensive visibility check: never leave a click that appears to do nothing.
+      // The wallet function itself remains responsible for state, history and data loading.
+      if (modal.classList.contains("hidden")) {
+        modal.classList.remove("hidden");
+      }
+      modal.setAttribute("aria-modal", "true");
+      modal.setAttribute("role", "dialog");
+      return false;
+    } catch (error) {
+      console.error("[NBTC] 点击入口执行失败：", error);
+      showBridgeError("NBTC 钱包打开失败：" + (error && error.message ? error.message : String(error)), "error");
+      return false;
+    }
+  };
+
+  // A second, delegated route protects against the chat button being re-created by UI rendering.
+  // The inline handler stops propagation, so this route is only a fallback for programmatic or
+  // dynamically replaced button instances that do not carry the inline attribute.
+  document.addEventListener("click", function (event) {
+    const button = event.target && event.target.closest ? event.target.closest("#nbtc-chat-button") : null;
+    if (!button || button.hasAttribute("onclick")) return;
+    window.dgchatNbtcOpenClick(event);
+  }, true);
+
+  const button = document.getElementById("nbtc-chat-button");
+  if (button) button.dataset.nbtcClickBridge = "ready";
+  else console.warn("[NBTC] chat entry button was not found when click bridge initialized.");
+})();
+</script>
     </body>
 
     </html>
