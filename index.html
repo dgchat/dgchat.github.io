@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>DGCHAT V0.1.120 单文件版</title>
+  <title>DGCHAT V0.1.121 单文件版</title>
   <style id="dgchat-bundled-tailwind">
 /*! tailwindcss v4.1.10 | MIT License | https://tailwindcss.com */
 @layer properties;
@@ -11183,6 +11183,13 @@ html.dark #nbtc-trust-cert { color: #ffd27a; }
   }
 </style>
 
+<style id="dgchat-lightning-send-modal-layer-fix-v0121">
+  #lightning-send-modal { position:fixed !important; inset:0 !important; z-index:2147483001 !important; padding:16px !important; pointer-events:auto !important; }
+  #lightning-send-modal.hidden { display:none !important; }
+  #lightning-send-modal:not(.hidden) { display:flex !important; align-items:center !important; justify-content:center !important; background:rgba(0,0,0,.68) !important; visibility:visible !important; }
+  #lightning-send-modal > div { position:relative; z-index:1; max-height:92vh; overflow-y:auto; overscroll-behavior:contain; }
+</style>
+
 </head>
 
 <body class="bg-gray-100 dark:bg-gray-950 h-screen-dvh w-screen overflow-hidden flex items-center justify-center font-sans relative">
@@ -11247,7 +11254,7 @@ html.dark #nbtc-trust-cert { color: #ffd27a; }
     </div>
 
     <div class="w-full max-w-sm mx-auto mt-5 text-center text-[11px] font-mono tracking-wider text-gray-400 dark:text-gray-500 select-none">
-      DGChat v0.1.120
+      DGChat v0.1.121
     </div>
   </div>
 
@@ -11365,7 +11372,7 @@ html.dark #nbtc-trust-cert { color: #ffd27a; }
         </div>
         <h3 class="text-xl font-bold text-gray-700 dark:text-gray-200 tracking-wide">DGCHAT 去中心化安全协议端</h3>
         <p class="text-sm mt-3 text-gray-400 max-w-md text-center leading-relaxed">
-          基于 Nostr 协议构建，全场景加密通讯，无中心化服务器<br>密钥即身份，通讯主权，自由导出<br><a href="https://github.com/dgchat/dgchat.github.io" target="_blank" rel="noopener noreferrer">https://github.com/dgchat/dgchat.github.io</a><br><span class="inline-block mt-1 text-xs font-mono tracking-wider text-gray-400">DGChat v0.1.120</span>
+          基于 Nostr 协议构建，全场景加密通讯，无中心化服务器<br>密钥即身份，通讯主权，自由导出<br><a href="https://github.com/dgchat/dgchat.github.io" target="_blank" rel="noopener noreferrer">https://github.com/dgchat/dgchat.github.io</a><br><span class="inline-block mt-1 text-xs font-mono tracking-wider text-gray-400">DGChat v0.1.121</span>
         </p>
         <div class="mt-8 flex space-x-4">
           <span class="px-3 py-1 bg-gray-100 dark:bg-gray-950 text-gray-500 dark:text-gray-400 text-xs rounded-full font-medium">NIP-04/59</span>
@@ -13517,6 +13524,9 @@ globalThis.NextTx=NextTx;
       if(statusDot) statusDot.className = "w-2 h-2 rounded-full bg-red-500 mr-1.5 shadow-sm shrink-0";
 
       clearNbtcWalletState();
+      if (typeof window.dgchatLightningOnLock === "function") {
+          try { window.dgchatLightningOnLock(); } catch (e) { console.warn("[Lightning] 锁定时清理运行态失败：", e); }
+      }
       privKeyHex = null;
       sessionStorage.removeItem("dage_session_priv");
     }
@@ -19150,7 +19160,7 @@ globalThis.NextTx=NextTx;
     </div>
   </div>
 
-  <div id="lightning-send-modal" class="fixed inset-0 bg-black/60 hidden z-[190] p-4 flex items-center justify-center">
+  <div id="lightning-send-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-label="闪电网络转账" class="fixed inset-0 bg-black/60 hidden z-[190] p-4 flex items-center justify-center">
     <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm max-h-[92vh] overflow-y-auto">
       <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
         <div><h3 class="text-base font-bold text-gray-800 dark:text-gray-100">⚡ 闪电转账</h3><p class="text-[10px] text-gray-400 mt-0.5">Bitcoin Lightning Network</p></div>
@@ -19225,6 +19235,7 @@ globalThis.NextTx=NextTx;
   let balanceMsat = null;
   let pairing = null;
   let paymentBusy = false;
+  let lockCleanupPending = false;
   let currentPaymentPeer = null;
   let currentInvoiceDraft = null;
 
@@ -19250,17 +19261,75 @@ globalThis.NextTx=NextTx;
     node.__hideTimer = setTimeout(() => { node.hidden = true; }, 3500);
   }
 
-  async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+  function isPrivateIpv4(host) {
+    if (!/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)) return false;
+    const p = host.split(".").map(Number);
+    if (p.some(n => !Number.isInteger(n) || n < 0 || n > 255)) return true;
+    const [a, b, c] = p;
+    return a === 0 || a === 10 || a === 127 || a >= 224 ||
+      (a === 100 && b >= 64 && b <= 127) || (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) ||
+      (a === 192 && b === 0 && (c === 0 || c === 2)) || (a === 192 && b === 88 && c === 99) ||
+      (a === 198 && (b === 18 || b === 19)) || (a === 198 && b === 51 && c === 100) ||
+      (a === 203 && b === 0 && c === 113);
+  }
+
+  function isSafePublicHttpsUrl(value) {
+    try {
+      const u = new URL(String(value || ""));
+      if (u.protocol !== "https:" || !u.hostname || u.username || u.password || u.hash) return false;
+      const host = u.hostname.toLowerCase().replace(/\.$/, "");
+      if (!host.includes(".") || host.startsWith("[") ||
+          ["localhost", "local", "internal", "lan", "home.arpa", "test", "invalid", "onion"].some(x =>
+            host === x || host.endsWith("." + x))) return false;
+      if (/^[\d.]+$/.test(host) && isPrivateIpv4(host)) return false;
+      return true;
+    } catch (_) { return false; }
+  }
+
+  async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 15000, maxBytes = 262144) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
-    try { return await fetch(url, { ...options, signal: controller.signal }); }
-    finally { clearTimeout(timer); }
+    try {
+      const response = await fetch(url, { ...options, redirect: "error", signal: controller.signal });
+      if (!response.ok) return { response, data: null };
+      if (!isSafePublicHttpsUrl(response.url || url)) throw new Error("服务响应地址不安全，已停止请求");
+      const declared = Number(response.headers.get("content-length") || 0);
+      if (Number.isFinite(declared) && declared > maxBytes) throw new Error("服务响应过大，已停止处理");
+      let text;
+      if (response.body && typeof response.body.getReader === "function") {
+        const reader = response.body.getReader(), chunks = [];
+        let total = 0;
+        try {
+          while (true) {
+            const part = await reader.read();
+            if (part.done) break;
+            total += part.value.byteLength;
+            if (total > maxBytes) {
+              try { await reader.cancel(); } catch (_) {}
+              throw new Error("服务响应过大，已停止处理");
+            }
+            chunks.push(part.value);
+          }
+        } finally { try { reader.releaseLock(); } catch (_) {} }
+        const bytes = new Uint8Array(total);
+        let offset = 0;
+        for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+        text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+      } else {
+        text = await response.text();
+        if (new TextEncoder().encode(text).byteLength > maxBytes) throw new Error("服务响应过大，已停止处理");
+      }
+      let data;
+      try { data = JSON.parse(text); } catch (_) { throw new Error("服务返回的 JSON 格式无效"); }
+      return { response, data };
+    } finally { clearTimeout(timer); }
   }
 
   function validRelay(value) {
     try {
       const u = new URL(String(value || "").trim());
-      return u.protocol === "wss:" && !!u.hostname && !u.username && !u.password && !u.hash;
+      return String(value || "").length <= 2048 && u.protocol === "wss:" && !!u.hostname && !u.username && !u.password && !u.hash;
     } catch (_) { return false; }
   }
 
@@ -19288,7 +19357,9 @@ globalThis.NextTx=NextTx;
     if (!host || !host.includes(".") || u.port || u.username || u.password || u.pathname !== "/" ||
         host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal") ||
         /^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.startsWith("[") || host.endsWith(".onion")) return null;
-    return { address: username + "@" + host, username, domain: host, endpoint: "https://" + host + "/.well-known/lnurlp/" + encodeURIComponent(username) };
+    const endpoint = "https://" + host + "/.well-known/lnurlp/" + encodeURIComponent(username);
+    if (!isSafePublicHttpsUrl(endpoint)) return null;
+    return { address: username + "@" + host, username, domain: host, endpoint };
   }
 
   async function ensureLoaded() {
@@ -19300,19 +19371,25 @@ globalThis.NextTx=NextTx;
     balanceMsat = null;
     try {
       const saved = await loadEncryptedData(STORAGE_CONNECTION, null);
-      if (saved && saved.version === 1 && saved.clientPubkey && saved.walletPubkey && saved.secret &&
-          validHex(saved.secret, 32) && validHex(saved.clientPubkey, 32) && validHex(saved.walletPubkey, 32) &&
-          normalizeRelayList(saved.relays).length) {
-        connection = {
-          ...saved,
-          relays: normalizeRelayList(saved.relays),
-          methods: Array.isArray(saved.methods) ? saved.methods : []
-        };
+      const savedRelays = saved && normalizeRelayList(saved.relays);
+      const savedMethods = saved && Array.isArray(saved.methods)
+        ? saved.methods.filter(x => typeof x === "string" && /^[a-z_]{1,64}$/.test(x)).slice(0, 64) : [];
+      if (saved && saved.version === 1 && validHex(saved.secret, 32) &&
+          validHex(saved.clientPubkey, 32) && validHex(saved.walletPubkey, 32) &&
+          nt.getPublicKey(saved.secret) === saved.clientPubkey.toLowerCase() &&
+          ["nip44_v2", "nip04"].includes(saved.encryption) && saved.network === "mainnet" &&
+          savedRelays.length && savedMethods.includes("pay_invoice")) {
+        connection = { ...saved, clientPubkey: saved.clientPubkey.toLowerCase(),
+          walletPubkey: saved.walletPubkey.toLowerCase(), relays: savedRelays, methods: [...new Set(savedMethods)] };
       }
     } catch (e) { console.warn("[Lightning] 本地连接信息读取失败：", e); }
     try {
       const rows = await loadEncryptedData(STORAGE_HISTORY, []);
-      txHistory = Array.isArray(rows) ? rows.filter(x => x && typeof x === "object").slice(0, MAX_HISTORY) : [];
+      txHistory = Array.isArray(rows) ? rows.filter(x => x && typeof x === "object" &&
+        validHex(x.paymentHash, 32) && validHex(x.peerPubkey, 32) &&
+        ["paying", "unknown", "paid", "failed"].includes(x.state) &&
+        Number.isSafeInteger(Number(x.amountSats)) && Number(x.amountSats) > 0
+      ).slice(0, MAX_HISTORY) : [];
       let changed = false;
       for (const row of txHistory) {
         if (row.state === "paying") { row.state = "unknown"; changed = true; }
@@ -19338,6 +19415,7 @@ globalThis.NextTx=NextTx;
 
   function connectionReady() {
     return !!(connection && connection.secret && connection.walletPubkey && connection.relays && connection.relays.length &&
+      connection.network === "mainnet" && ["nip44_v2", "nip04"].includes(connection.encryption) &&
       Array.isArray(connection.methods) && connection.methods.includes("pay_invoice"));
   }
 
@@ -19543,6 +19621,7 @@ globalThis.NextTx=NextTx;
       };
       ws.onmessage = ev => {
         if (!pairing || pairing.clientPubkey !== clientPubkey || pairing.handled) return;
+        if (typeof ev.data !== "string" || ev.data.length > 65536) return;
         let msg; try { msg = JSON.parse(ev.data); } catch (_) { return; }
         if (!Array.isArray(msg) || msg[0] !== "EVENT" || !msg[2]) return;
         void handlePairingInfoEvent(msg[2], { secret, clientPubkey, state, relay });
@@ -19560,7 +19639,9 @@ globalThis.NextTx=NextTx;
   }
 
   function validNostrEvent(ev) {
-    try { return !!(ev && nt.validateEvent(ev) && nt.getEventHash(ev) === ev.id && nt.verifySignature(ev)); }
+    try { return !!(ev && typeof ev.content === "string" && ev.content.length <= 65536 &&
+      Array.isArray(ev.tags) && ev.tags.length <= 64 &&
+      nt.validateEvent(ev) && nt.getEventHash(ev) === ev.id && nt.verifySignature(ev)); }
     catch (_) { return false; }
   }
 
@@ -19608,15 +19689,18 @@ globalThis.NextTx=NextTx;
       const timer = setTimeout(() => finish(new Error("读取钱包信息超时")), 9000);
       function finish(err, value) {
         if (done) return;
-        if (err && !published) err.notSent = true;
         done = true; clearTimeout(timer);
         try { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(["CLOSE", subId])); } catch (_) {}
         try { ws && ws.close(); } catch (_) {}
         err ? reject(err) : resolve(value);
       }
       try { ws = new WebSocket(relay); } catch (e) { return finish(e); }
-      ws.onopen = () => ws.send(JSON.stringify(["REQ", subId, { kinds: [13194], authors: [walletPubkey], limit: 1 }]));
+      ws.onopen = () => {
+        try { ws.send(JSON.stringify(["REQ", subId, { kinds: [13194], authors: [walletPubkey], limit: 1 }])); }
+        catch (e) { finish(e); }
+      };
       ws.onmessage = ev => {
+        if (typeof ev.data !== "string" || ev.data.length > 131072) return;
         let msg; try { msg = JSON.parse(ev.data); } catch (_) { return; }
         if (Array.isArray(msg) && msg[0] === "EVENT" && msg[1] === subId && msg[2]) {
           const item = msg[2];
@@ -19634,6 +19718,8 @@ globalThis.NextTx=NextTx;
     const input = $("lightning-nwc-uri");
     const raw = String(input?.value || "").trim();
     if (!raw) return setManagerStatus("请粘贴钱包提供的连接码。", "error");
+    if (raw.length > 4096) { if (input) input.value = ""; return setManagerStatus("连接码长度异常，已拒绝导入。", "error"); }
+    if (input) input.value = "";
     try {
       const u = new URL(raw);
       if (u.protocol !== "nostr+walletconnect:") throw new Error("连接码格式不正确");
@@ -19643,6 +19729,7 @@ globalThis.NextTx=NextTx;
       if (!validHex(walletPubkey, 32) || !validHex(secret, 32) || !relays.length) throw new Error("连接码缺少有效的公钥、密钥或 WSS 节点");
       setManagerStatus("正在验证钱包连接…", "info");
       const info = await fetchInfoEvent(relays[0], walletPubkey);
+      if (isLocked || !privKeyHex) throw new Error("账户已锁定，已取消钱包连接");
       const schemes = (eventTag(info, "encryption") || "nip04").split(/\s+/);
       const encryption = schemes.includes("nip44_v2") ? "nip44_v2" : schemes.includes("nip04") ? "nip04" : null;
       if (!encryption) throw new Error("钱包加密方式不受支持");
@@ -19657,6 +19744,7 @@ globalThis.NextTx=NextTx;
 
   async function finalizeConnection(candidate) {
     const info = await nwcRequest(candidate, "get_info", {}, 25000);
+    if (isLocked || !privKeyHex) throw new Error("账户已锁定，已取消钱包连接");
     const network = String(info.network || "").toLowerCase();
     if (network !== "mainnet") throw new Error("无法确认钱包处于 Bitcoin 主网，已拒绝连接");
     const methods = Array.isArray(info.methods) ? info.methods : candidate.methods;
@@ -19719,21 +19807,23 @@ globalThis.NextTx=NextTx;
         } catch (e) { finish(e); }
       };
       ws.onmessage = async ev => {
+        if (typeof ev.data !== "string" || ev.data.length > 131072) return;
         let msg; try { msg = JSON.parse(ev.data); } catch (_) { return; }
         if (!Array.isArray(msg)) return;
         if (msg[0] === "OK" && msg[1] === requestEvent.id && msg[2] === false) {
-          const err = new Error("钱包节点未接受请求：" + String(msg[3] || "拒绝")); err.notSent = true; return finish(err);
+          const err = new Error("钱包节点未接受请求：" + String(msg[3] || "拒绝").slice(0, 180)); err.notSent = true; return finish(err);
         }
         if (msg[0] === "EVENT" && msg[1] === subId && msg[2]) {
           const response = msg[2];
-          if (!validNostrEvent(response) || response.kind !== 23195 || response.pubkey !== conn.walletPubkey ||
+          if (!validNostrEvent(response) || response.content.length > 65536 ||
+              response.kind !== 23195 || response.pubkey !== conn.walletPubkey ||
               eventTag(response, "p") !== conn.clientPubkey || eventTag(response, "e") !== requestEvent.id) return;
           try {
             const body = JSON.parse(await nwcDecrypt(conn, response.content));
             if (!body || body.result_type !== method) return;
             if (body.error) {
-              const err = new Error(String(body.error.message || body.error.code || "钱包操作失败"));
-              err.code = String(body.error.code || "OTHER");
+              const err = new Error(String(body.error.message || body.error.code || "钱包操作失败").slice(0, 240));
+              err.code = String(body.error.code || "OTHER").slice(0, 64);
               return finish(err);
             }
             if (!body.result || typeof body.result !== "object") return finish(new Error("钱包返回了无效结果"));
@@ -19819,15 +19909,26 @@ globalThis.NextTx=NextTx;
     $("lightning-send-connect-needed").classList.toggle("hidden", connectionReady());
     $("lightning-send-submit").disabled = false;
     renderPeerHistory(peerPk);
-    $("lightning-send-modal").classList.remove("hidden");
-    if (typeof ModalManager !== "undefined" && ModalManager.push) ModalManager.push("lightningSend", closePayment);
+    const modal = $("lightning-send-modal");
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden", "false");
+    try {
+      if (typeof ModalManager !== "undefined" && ModalManager && ModalManager.push) ModalManager.push("lightningSend", closePayment);
+    } catch (historyError) {
+      if (Array.isArray(ModalManager.stack) && ModalManager.stack.length &&
+          ModalManager.stack[ModalManager.stack.length - 1].id === "lightningSend") ModalManager.stack.pop();
+      console.warn("[Lightning] Send dialog history integration unavailable; dialog remains open.", historyError);
+    }
   }
 
   function closePayment(fromPopState = false) {
     if (paymentBusy) return notify("付款请求正在处理中，请等待结果返回。", "info");
-    const modal = $("lightning-send-modal"); if (modal) modal.classList.add("hidden");
+    const modal = $("lightning-send-modal");
+    if (modal) { modal.classList.add("hidden"); modal.setAttribute("aria-hidden", "true"); }
     currentInvoiceDraft = null;
-    if (!fromPopState && typeof ModalManager !== "undefined" && ModalManager.pop) ModalManager.pop("lightningSend");
+    if (!fromPopState && typeof ModalManager !== "undefined" && ModalManager && ModalManager.pop) {
+      try { ModalManager.pop("lightningSend"); } catch (historyError) { console.warn("[Lightning] Send dialog history cleanup unavailable.", historyError); }
+    }
   }
 
   async function requestLnurlInvoice() {
@@ -19845,18 +19946,20 @@ globalThis.NextTx=NextTx;
     if (!Number.isSafeInteger(sats) || sats <= 0) throw new Error("转账金额超出有效范围");
     const comment = String($("lightning-send-comment").value || "").trim();
     safeText($("lightning-send-status"), "正在获取付款请求…");
-    const response = await fetchWithTimeout(parsed.endpoint, { method: "GET", mode: "cors", credentials: "omit", cache: "no-store", redirect: "follow", headers: { Accept: "application/json" } }, 15000);
-    if (Number(response.headers.get("content-length") || 0) > 1048576) throw new Error("收款服务响应过大，已停止处理");
+    const discovery = await fetchJsonWithTimeout(parsed.endpoint, { method: "GET", mode: "cors", credentials: "omit", cache: "no-store", headers: { Accept: "application/json" } }, 15000, 262144);
+    const response = discovery.response;
     if (!response.ok) throw new Error("收款服务暂不可用（HTTP " + response.status + "）");
-    if (!String(response.url || parsed.endpoint).startsWith("https://")) throw new Error("收款服务未使用安全 HTTPS 地址");
-    const pay = await response.json();
+    const pay = discovery.data;
     if (!pay || pay.status === "ERROR" || pay.tag !== "payRequest" || typeof pay.callback !== "string" || typeof pay.metadata !== "string" || pay.metadata.length > 12000) throw new Error(String(pay?.reason || "对方的收款服务返回了无效信息"));
     let metadataRows;
     try { metadataRows = JSON.parse(pay.metadata); } catch (_) { throw new Error("收款服务的付款说明格式无效"); }
-    if (!Array.isArray(metadataRows) || metadataRows.some(row => !Array.isArray(row) || typeof row[0] !== "string")) throw new Error("收款服务的付款说明格式无效");
-    const paymentDescription = (metadataRows.find(row => row[0] === "text/plain" && typeof row[1] === "string") || [])[1] || "";
+    if (!Array.isArray(metadataRows) || metadataRows.length > 32 ||
+        metadataRows.some(row => !Array.isArray(row) || typeof row[0] !== "string")) throw new Error("收款服务的付款说明格式无效");
+    const plainRows = metadataRows.filter(row => row[0] === "text/plain");
+    if (plainRows.length !== 1 || typeof plainRows[0][1] !== "string") throw new Error("收款服务缺少有效的付款说明");
+    const paymentDescription = plainRows[0][1].slice(0, 2000);
+    if (!isSafePublicHttpsUrl(pay.callback)) throw new Error("收款服务的付款回调地址不安全");
     const callback = new URL(pay.callback);
-    if (callback.protocol !== "https:" || callback.username || callback.password) throw new Error("收款服务的付款回调地址不安全");
     const min = Number(pay.minSendable), max = Number(pay.maxSendable), amountMsat = sats * 1000;
     if (!Number.isSafeInteger(min) || !Number.isSafeInteger(max) || min <= 0 || max < min) throw new Error("收款服务提供的金额范围无效");
     if (amountMsat < min || amountMsat > max) throw new Error("金额超出对方收款范围：" + formatMsat(min) + " 至 " + formatMsat(max));
@@ -19864,11 +19967,10 @@ globalThis.NextTx=NextTx;
     if (comment && (!Number.isInteger(commentAllowed) || commentAllowed <= 0 || [...comment].length > commentAllowed)) throw new Error(commentAllowed > 0 ? "备注最多允许 " + commentAllowed + " 个字符" : "对方收款服务不接受备注");
     callback.searchParams.set("amount", String(amountMsat));
     if (comment) callback.searchParams.set("comment", comment);
-    const invoiceResponse = await fetchWithTimeout(callback.toString(), { method: "GET", mode: "cors", credentials: "omit", cache: "no-store", redirect: "follow", headers: { Accept: "application/json" } }, 15000);
-    if (Number(invoiceResponse.headers.get("content-length") || 0) > 1048576) throw new Error("付款请求响应过大，已停止处理");
+    const invoiceFetch = await fetchJsonWithTimeout(callback.toString(), { method: "GET", mode: "cors", credentials: "omit", cache: "no-store", headers: { Accept: "application/json" } }, 15000, 65536);
+    const invoiceResponse = invoiceFetch.response;
     if (!invoiceResponse.ok) throw new Error("付款请求生成失败（HTTP " + invoiceResponse.status + "）");
-    if (!String(invoiceResponse.url || callback.toString()).startsWith("https://")) throw new Error("付款请求返回了不安全的地址");
-    const invoiceBody = await invoiceResponse.json();
+    const invoiceBody = invoiceFetch.data;
     if (!invoiceBody || invoiceBody.status === "ERROR" || typeof invoiceBody.pr !== "string") throw new Error(String(invoiceBody?.reason || "收款服务没有返回有效付款请求"));
     const decoded = decodeBolt11(invoiceBody.pr);
     if (decoded.network !== "mainnet") throw new Error("对方返回的不是 Bitcoin 主网付款请求");
@@ -19926,7 +20028,7 @@ globalThis.NextTx=NextTx;
       const digest = hex(new Uint8Array(await crypto.subtle.digest("SHA-256", Uint8Array.from(result.preimage.match(/.{2}/g).map(x => parseInt(x, 16))))));
       if (digest.toLowerCase() !== draft.paymentHash.toLowerCase()) throw new Error("钱包付款凭证校验失败，付款结果需要进一步查询");
       record.state = "paid";
-      record.feeMsat = Number.isSafeInteger(Number(result.fees_paid)) ? Number(result.fees_paid) : null;
+      record.feeMsat = Number.isSafeInteger(Number(result.fees_paid)) && Number(result.fees_paid) >= 0 ? Number(result.fees_paid) : null;
       record.timestamp = Date.now();
       let historySaved = true;
       try { await saveHistory(); } catch (e) { historySaved = false; console.warn("[Lightning] 付款成功，但本机历史记录保存失败：", e); }
@@ -19937,7 +20039,7 @@ globalThis.NextTx=NextTx;
       $("lightning-send-result-actions").classList.add("hidden");
       renderPeerHistory(draft.peerPubkey);
       renderManagerHistory();
-      if (connection.methods.includes("get_balance")) void refreshBalance();
+      if (!isLocked && connection && connection.methods.includes("get_balance")) void refreshBalance().catch(() => {});
     } catch (e) {
       record.state = e.code === "PAYMENT_FAILED" || e.notSent ? "failed" : "unknown";
       record.error = String(e.message || e).slice(0, 240);
@@ -19951,6 +20053,10 @@ globalThis.NextTx=NextTx;
     } finally {
       paymentBusy = false;
       $("lightning-send-confirm").disabled = false;
+      if (lockCleanupPending) {
+        lockCleanupPending = false;
+        clearSensitiveRuntime();
+      }
     }
   }
 
@@ -19960,13 +20066,24 @@ globalThis.NextTx=NextTx;
     const row = txHistory.find(x => x.paymentHash === paymentHash);
     if (!row) return;
     try {
+      if (!validHex(paymentHash, 32)) throw new Error("本地付款记录的支付哈希无效");
       const result = await nwcRequest(connection, "lookup_invoice", { payment_hash: paymentHash }, 25000);
+      if (result.payment_hash != null && String(result.payment_hash).toLowerCase() !== row.paymentHash.toLowerCase()) {
+        throw new Error("钱包返回的支付哈希与本地记录不一致");
+      }
+      if (result.type != null && result.type !== "outgoing") throw new Error("钱包返回的记录不是付款交易");
       const state = String(result.state || "").toLowerCase();
-      if (state === "settled") row.state = "paid";
-      else if (state === "failed" || state === "expired") row.state = "failed";
+      if (state === "settled") {
+        const preimage = String(result.preimage || "");
+        if (!validHex(preimage, 32)) throw new Error("钱包报告已结算，但未提供可验证的付款凭证；暂不标记成功");
+        const digest = hex(new Uint8Array(await crypto.subtle.digest("SHA-256",
+          Uint8Array.from(preimage.match(/.{2}/g).map(x => parseInt(x, 16))))));
+        if (digest.toLowerCase() !== row.paymentHash.toLowerCase()) throw new Error("付款凭证校验失败，拒绝标记为成功");
+        row.state = "paid";
+      } else if (state === "failed" || state === "expired") row.state = "failed";
       else if (state === "pending" || state === "accepted") row.state = "unknown";
       else throw new Error("钱包返回了无法识别的付款状态");
-      if (result.fees_paid != null && Number.isSafeInteger(Number(result.fees_paid))) row.feeMsat = Number(result.fees_paid);
+      if (result.fees_paid != null && Number.isSafeInteger(Number(result.fees_paid)) && Number(result.fees_paid) >= 0) row.feeMsat = Number(result.fees_paid);
       await saveHistory();
       renderManager();
       if (currentPaymentPeer) renderPeerHistory(currentPaymentPeer);
@@ -20061,10 +20178,30 @@ globalThis.NextTx=NextTx;
     openManager();
   }
 
-  function clearRuntime() {
+  function clearSensitiveRuntime() {
     closePairing();
     connection = null; txHistory = []; balanceMsat = null; loadedFor = null;
-    paymentBusy = false; currentPaymentPeer = null; currentInvoiceDraft = null;
+    currentPaymentPeer = null; currentInvoiceDraft = null;
+    for (const id of ["lightning-wallet-modal", "lightning-send-modal"]) {
+      const modal = $(id);
+      if (modal) { modal.classList.add("hidden"); modal.setAttribute("aria-hidden", "true"); }
+    }
+  }
+
+  function handleAppLock() {
+    closePairing();
+    for (const id of ["lightning-wallet-modal", "lightning-send-modal"]) {
+      const modal = $(id);
+      if (modal) { modal.classList.add("hidden"); modal.setAttribute("aria-hidden", "true"); }
+    }
+    if (paymentBusy) { lockCleanupPending = true; return; }
+    clearSensitiveRuntime();
+  }
+
+  function clearRuntime() {
+    lockCleanupPending = false;
+    clearSensitiveRuntime();
+    paymentBusy = false;
   }
 
   window.openLightningWalletManager = openManager;
@@ -20085,6 +20222,7 @@ globalThis.NextTx=NextTx;
   window.connectLightningFromPayment = connectFromPayment;
   window.openPeerProfileLightningPayment = openPeerProfilePayment;
   window.dgchatLightningUpdateChatButton = updateChatButton;
+  window.dgchatLightningOnLock = handleAppLock;
 
   const managerButton = $("lightning-wallet-manager-button");
   if (managerButton) {
