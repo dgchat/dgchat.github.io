@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>DGCHAT V0.1.104 单文件版</title>
+  <title>DGCHAT V0.1.106 单文件版</title>
   <style id="dgchat-bundled-tailwind">
 /*! tailwindcss v4.1.10 | MIT License | https://tailwindcss.com */
 @layer properties;
@@ -11060,6 +11060,20 @@ html.dark #nbtc-wallet-modal #nbtc-trust-cert-network {
 #nbtc-trust-cert { border: 1px solid #d7a84b; background: rgba(215,168,75,.12); color: #b7791f; border-radius: 8px; padding: 4px 8px; font-size: 10px; font-weight: 700; white-space: nowrap; }
 html.dark #nbtc-trust-cert { color: #ffd27a; }
 </style>
+
+<style id="dgchat-nbtc-profile-address-theme">
+  .nbtc-profile-address-card { background-color: #eff6ff; border-color: #dbeafe; }
+  .nbtc-profile-address-label { color: #1d4ed8; }
+  .nbtc-profile-address-network { color: #3b82f6; }
+  .nbtc-profile-address-value { color: #374151; }
+  .nbtc-profile-address-copy { background-color: #ffffff; border-color: #bfdbfe; color: #2563eb; }
+  .nbtc-profile-address-copy:hover { background-color: #dbeafe; }
+  html.dark .nbtc-profile-address-card { background-color: rgba(30, 58, 138, .22); border-color: rgba(30, 64, 175, .55); }
+  html.dark .nbtc-profile-address-label, html.dark .nbtc-profile-address-network { color: #93c5fd; }
+  html.dark .nbtc-profile-address-value { color: #e5e7eb; }
+  html.dark .nbtc-profile-address-copy { background-color: #111827; border-color: #1e40af; color: #93c5fd; }
+  html.dark .nbtc-profile-address-copy:hover { background-color: rgba(30, 58, 138, .45); }
+</style>
 </head>
 
 <body class="bg-gray-100 dark:bg-gray-950 h-screen-dvh w-screen overflow-hidden flex items-center justify-center font-sans relative">
@@ -11068,7 +11082,7 @@ html.dark #nbtc-trust-cert { color: #ffd27a; }
   <div id="login-screen" class="w-full h-full md:h-auto md:max-w-md bg-white dark:bg-gray-900 md:rounded-xl shadow-lg p-6 md:p-8 flex flex-col justify-center hidden z-50">
     <div class="max-w-sm w-full mx-auto" id="account-list-area">
       <h2 class="text-3xl font-bold text-center text-gray-800 dark:text-gray-100 mb-1">DGCHAT 🔐</h2>
-      <div class="text-center text-xs text-blue-500 font-mono mb-6 font-bold tracking-widest">v0.1.104</div>
+      <div class="text-center text-xs text-blue-500 font-mono mb-6 font-bold tracking-widest">v0.1.106</div>
       <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 text-center">选择账号登录</p>
 
       <div id="saved-accounts-list" class="space-y-3 mb-6 max-h-60 overflow-y-auto no-scrollbar">
@@ -11361,6 +11375,16 @@ html.dark #nbtc-trust-cert { color: #ffd27a; }
           </div>
         </div>
 
+        <div id="peer-modal-nbtc-container" class="hidden w-full nbtc-profile-address-card rounded-lg p-3 border mb-4 shrink-0">
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-[11px] font-semibold nbtc-profile-address-label">NBTC 收款地址</label>
+            <span class="text-[10px] nbtc-profile-address-network">NextBTC</span>
+          </div>
+          <div id="peer-modal-nbtc-address" class="text-xs nbtc-profile-address-value font-mono break-all select-all leading-relaxed"></div>
+          <div class="flex justify-end mt-2">
+            <button type="button" onclick="copyPeerNbtcAddress()" class="px-3 py-1.5 rounded-lg nbtc-profile-address-copy text-xs border">复制地址</button>
+          </div>
+        </div>
 
         <div id="peer-extra-info" class="w-full space-y-3 mb-5 hidden shrink-0">
           <div id="peer-modal-about-container" class="hidden">
@@ -11478,13 +11502,12 @@ html.dark #nbtc-trust-cert { color: #ffd27a; }
         </div>
 
         <div id="nbtc-peer-panel" class="hidden border border-blue-100 dark:border-blue-900/60 rounded-xl p-3 space-y-2">
-          <div class="text-xs font-semibold text-gray-700 dark:text-gray-200">与 <span id="nbtc-peer-name">联系人</span> 的私聊支付</div>
-          <div id="nbtc-peer-address-status" class="text-[11px] text-gray-500 dark:text-gray-400">尚未获取对方的 NBTC 收款地址。</div>
+          <div class="text-xs font-semibold text-gray-700 dark:text-gray-200">向 <span id="nbtc-peer-name">联系人</span> 转账</div>
+          <div id="nbtc-peer-address-status" class="text-[11px] text-gray-500 dark:text-gray-400">正在读取对方的个人资料…</div>
           <div class="flex gap-2">
             <button type="button" onclick="openNbtcSendModal(nbtcWalletPeerPk)" class="flex-1 py-2 rounded-lg bg-blue-600 text-white text-xs hover:bg-blue-700">转账给此联系人</button>
-            <button id="nbtc-peer-request-button" type="button" onclick="requestNbtcPeerAddress(nbtcWalletPeerPk,true)" class="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-300">获取收款地址</button>
+            <button type="button" onclick="refreshNbtcPeerProfile(nbtcWalletPeerPk)" class="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-300">刷新资料</button>
           </div>
-          
         </div>
 
         <div class="flex gap-2">
@@ -13813,10 +13836,10 @@ globalThis.NextTx=NextTx;
       }
       contacts = await loadEncryptedData("contacts_cache", []);
       let accInfo = accounts.find(a => a.pubkey === pubKeyHex);
-      accInfo && accInfo.name && !profiles[pubKeyHex]?.name && (profiles[pubKeyHex] || (profiles[pubKeyHex] = {}),
-            profiles[pubKeyHex].name = accInfo.name, setTimeout(() => { publishEvent(0, JSON.stringify({
-              name: accInfo.name
-            })).catch(() => {}) }, 5000));
+      if (accInfo && accInfo.name && !profiles[pubKeyHex]?.name) {
+        profiles[pubKeyHex] || (profiles[pubKeyHex] = {});
+        profiles[pubKeyHex].name = accInfo.name;
+      }
       let pArr = await loadEncryptedData("pinned_chats", []);
       pinnedChats = new Set(pArr);
       let hArr = await loadEncryptedData("hidden_chats", []);
@@ -13986,6 +14009,7 @@ globalThis.NextTx=NextTx;
                 console.log(`✅ [Relay] 已连接: ${url} (${relayStates[url].ping}ms)`), updateRelayStatusUI(),
                   setTimeout(retryReliableOutbox, 200),
                   reconnectTimers[url] && clearInterval(reconnectTimers[url]);
+                if (nbtcWalletOwnerPk === pubKeyHex && nbtcWalletAddress && privKeyHex && !isLocked) setTimeout(() => void ensureNbtcOwnProfilePublished(), 1200);
                 let ghostGids = Object.keys(groups).filter(gid => 1 === groups[gid].type),
                   normalGids = Object.keys(groups).filter(gid => 0 === groups[gid].type),
                   filterBase = {
@@ -14026,11 +14050,29 @@ globalThis.NextTx=NextTx;
                 if (isLocked) return;
                 const data = JSON.parse(event.data);
                 if ("EVENT" === data[0]) {
+                  const profileWaiter = nbtcProfileQueryWaiters.get(data[1]);
+                  if (profileWaiter && data[2] && data[2].kind === 0 && data[2].pubkey === profileWaiter.authorPk) {
+                    try {
+                      const candidateEvent = data[2];
+                      if (typeof candidateEvent.content === "string" && candidateEvent.content.length <= 524288 && candidateEvent.id === nt.getEventHash(candidateEvent) && nt.verifySignature(candidateEvent)) {
+                        const candidateProfile = JSON.parse(candidateEvent.content);
+                        if (candidateProfile && typeof candidateProfile === "object" && !Array.isArray(candidateProfile)) {
+                          profileWaiter.received = true;
+                          profileWaiter.profilesByRelay[url] = await nbtcValidateProfileAddress(candidateProfile);
+                        }
+                      }
+                    } catch { profileWaiter.profilesByRelay[url] = null; }
+                  }
                   const st = syncPages[data[1]];
                   if (st && st.sock === ws) {st.count++;st.oldest=Math.min(st.oldest,data[2].created_at || st.until);}
                   await handleNostrEvent(data[2]);
-                } else if ("EOSE" === data[0] && syncPages[data[1]] && syncPages[data[1]].sock === ws) {
-                  finishBackfillPage(data[1]);
+                } else if ("EOSE" === data[0]) {
+                  if (syncPages[data[1]] && syncPages[data[1]].sock === ws) finishBackfillPage(data[1]);
+                  const profileWaiter = nbtcProfileQueryWaiters.get(data[1]);
+                  if (profileWaiter) {
+                    profileWaiter.pending.delete(url);
+                    if (!profileWaiter.pending.size) finishNbtcProfileQuery(data[1], true);
+                  }
                 }
                 else if ("OK" === data[0]) {
                   let eventId = data[1],
@@ -14426,18 +14468,22 @@ globalThis.NextTx=NextTx;
       }, 250);
     }
 
-    async function publishEvent(kind, content, tags = []) {
+    async function publishEvent(kind, content, tags = [], createdAt = null) {
       let safeTags = [...tags];
       safeTags.push(["client", "dagechat"], ["nonce", Math.random().toString().substring(2, 10)]);
       let event = {
         kind: kind,
-        created_at: Math.floor(Date.now() / 1e3),
+        created_at: Number.isFinite(createdAt) ? Math.max(Math.floor(Date.now() / 1e3), Math.floor(createdAt)) : Math.floor(Date.now() / 1e3),
         tags: safeTags,
         content: content,
         pubkey: pubKeyHex
       };
       event.id = nt.getEventHash(event), event.sig = nt.getSignature(event, privKeyHex);
       let results = await broadcastToRelays(JSON.stringify(["EVENT", event]));
+      if (kind === 0 && results && Object.values(results).some(x => x && x.success)) {
+        window._profiles_ts || (window._profiles_ts = {});
+        window._profiles_ts[pubKeyHex] = Math.max(Number(window._profiles_ts[pubKeyHex] || 0), event.created_at);
+      }
       return event._send_status = results, event;
     }
 
@@ -14459,7 +14505,49 @@ globalThis.NextTx=NextTx;
               if (window._profiles_ts[ev.pubkey] && ev.created_at <= window._profiles_ts[ev.pubkey]) return;
               window._profiles_ts[ev.pubkey] = ev.created_at;
               let newProfile = JSON.parse(ev.content);
-              if (newProfile.ln && !newProfile.lud16 && (newProfile.lud16 = newProfile.ln), profiles[ev.pubkey] = Object.assign({}, profiles[ev.pubkey] || {}, newProfile),
+              if (!newProfile || typeof newProfile !== "object" || Array.isArray(newProfile)) return;
+              const profileContainsNbtcAddress = Object.prototype.hasOwnProperty.call(newProfile, "nbtc_address");
+              let validatedNbtcAddress = null;
+              if (profileContainsNbtcAddress) {
+                validatedNbtcAddress = await nbtcValidateProfileAddress(newProfile);
+                if (validatedNbtcAddress) {
+                  newProfile.nbtc_address = validatedNbtcAddress;
+                  newProfile.nbtc_network = "nextbtc";
+                  newProfile.nbtc_genesis = DGCHAT_NBTC_GENESIS;
+                } else {
+                  delete newProfile.nbtc_address;
+                  delete newProfile.nbtc_network;
+                  delete newProfile.nbtc_genesis;
+                }
+              }
+              if (ev.pubkey === pubKeyHex) {
+                nbtcRemoteProfileState[ev.pubkey] = {
+                  seen: true, address: validatedNbtcAddress,
+                  network: validatedNbtcAddress ? "nextbtc" : null,
+                  genesis: validatedNbtcAddress ? DGCHAT_NBTC_GENESIS : null,
+                  created_at: ev.created_at
+                };
+              }
+              const mergedProfile = Object.assign({}, profiles[ev.pubkey] || {}, newProfile);
+              if (profileContainsNbtcAddress && !validatedNbtcAddress) {
+                delete mergedProfile.nbtc_address; delete mergedProfile.nbtc_network; delete mergedProfile.nbtc_genesis;
+                if (ev.pubkey !== pubKeyHex) delete nbtcPeerAddresses[ev.pubkey];
+              }
+              profiles[ev.pubkey] = mergedProfile;
+              if (validatedNbtcAddress && ev.pubkey !== pubKeyHex) {
+                nbtcPeerAddresses[ev.pubkey] = validatedNbtcAddress;
+                void saveNbtcPeerAddresses();
+                if (nbtcWalletPeerPk === ev.pubkey) renderNbtcPeerPanel();
+                const sendModal = document.getElementById("nbtc-send-modal");
+                if (sendModal && !sendModal.classList.contains("hidden") && nbtcWalletPeerPk === ev.pubkey) {
+                  const sendAddress = document.getElementById("nbtc-send-address");
+                  if (sendAddress && !sendAddress.value.trim()) sendAddress.value = validatedNbtcAddress;
+                  const sendStatus = document.getElementById("nbtc-send-peer-status");
+                  if (sendStatus) sendStatus.textContent = "已获取对方的 NBTC 收款地址，请核对后再转账。";
+                }
+              }
+              if (profileContainsNbtcAddress && !validatedNbtcAddress && ev.pubkey !== pubKeyHex) void saveNbtcPeerAddresses();
+              if (newProfile.ln && !newProfile.lud16 && (profiles[ev.pubkey].lud16 = newProfile.ln),
                 newProfile.picture) try {
                 setDBItem("dage_avatar_" + ev.pubkey, newProfile.picture);
               } catch (e) {}
@@ -14477,7 +14565,9 @@ globalThis.NextTx=NextTx;
                     isChanged = !0), isChanged && localStorage.setItem("dage_accounts", JSON.stringify(accounts));
                 }
               }
+              syncLocalEncryptedCache();
               renderContacts(), currentChatPk === ev.pubkey && updateChatHeader(), document.getElementById("peer-profile-modal").classList.contains("hidden") || peerPkToViewGlobal !== ev.pubkey || showPeerProfileModal(peerPkToViewGlobal);
+              if (nbtcWalletPeerPk === ev.pubkey) renderNbtcPeerPanel();
             } catch (e) {}
             if (3 === ev.kind && ev.pubkey === pubKeyHex) {
               let newContacts = ev.tags.filter(t => "p" === t[0]).map(t => t[1]);
@@ -15893,10 +15983,7 @@ globalThis.NextTx=NextTx;
           displayPubkeyText = targetPk;
         targetPk === pubKeyHex ? (displayName = `${prof.name || "我"} (备忘录 💾)`, displayPubkeyText = nt.nip19.npubEncode(targetPk)) : isGroup || (displayPubkeyText = nt.nip19.npubEncode(targetPk)),
           document.getElementById("peer-modal-name").innerText = displayName || "未知", document.getElementById("peer-modal-pubkey-label").innerText = displayId,
-          document.getElementById("peer-modal-pubkey").innerText = displayPubkeyText, isGroup || broadcastToRelays(JSON.stringify(["REQ", "fetch-live-profile-" + Date.now(), {
-            kinds: [0],
-            authors: [targetPk]
-          }]));
+          document.getElementById("peer-modal-pubkey").innerText = displayPubkeyText, !isGroup && targetPk !== pubKeyHex && requestNbtcPeerProfile(targetPk, true);
 
         let pubkeyActionsEl = document.getElementById("peer-modal-pubkey-actions");
         if (pubkeyActionsEl) {
@@ -15935,6 +16022,16 @@ globalThis.NextTx=NextTx;
           prof.relays ? (document.getElementById("peer-modal-relays").innerText = prof.relays,
               relaysBox.classList.remove("hidden"), hasExtra = !0) : relaysBox.classList.add("hidden"),
             hasExtra ? extraContainer.classList.remove("hidden") : extraContainer.classList.add("hidden");
+        }
+        const nbtcProfileBox = document.getElementById("peer-modal-nbtc-container");
+        const nbtcProfileText = document.getElementById("peer-modal-nbtc-address");
+        const displayedNbtcAddress = targetPk === pubKeyHex && nbtcWalletAddress ? nbtcWalletAddress : (nbtcProfileAddressCandidate(prof) || nbtcPeerAddresses[targetPk] || null);
+        if (!isGroup && displayedNbtcAddress && nbtcProfileBox && nbtcProfileText) {
+          nbtcProfileText.textContent = displayedNbtcAddress;
+          nbtcProfileBox.classList.remove("hidden");
+        } else if (nbtcProfileBox) {
+          nbtcProfileBox.classList.add("hidden");
+          if (nbtcProfileText) nbtcProfileText.textContent = "";
         }
         let badge = document.getElementById("peer-modal-badge"),
           actionArea = document.getElementById("peer-action-btn-area");
@@ -15997,6 +16094,12 @@ globalThis.NextTx=NextTx;
         }));
     }
 
+    function copyPeerNbtcAddress() {
+      const value = document.getElementById("peer-modal-nbtc-address")?.textContent?.trim();
+      if (!value) return;
+      copyText(value);
+      nbtcToast("NBTC 收款地址已复制", "success");
+    }
     function closePeerProfileModal(fromPopState = !1) {
       peerPkToViewGlobal = null, document.getElementById("peer-profile-content").classList.add("scale-95"),
         setTimeout(() => document.getElementById("peer-profile-modal").classList.add("hidden"), 200),
@@ -16090,16 +16193,19 @@ globalThis.NextTx=NextTx;
       let accIdx = accounts.findIndex(a => a.pubkey === pubKeyHex);
       accIdx > -1 && (accounts[accIdx].name = name || accounts[accIdx].name, accounts[accIdx].picture = pic || accounts[accIdx].picture,
           accounts[accIdx].about = about, accounts[accIdx].website = website, accounts[accIdx].ln = ln,
-          accounts[accIdx].relays = relaysDisplay, localStorage.setItem("dage_accounts", JSON.stringify(accounts))),
-        (name || pic || about || website || ln || relaysDisplay) && await publishEvent(0, JSON.stringify({
-          name: name,
-          picture: pic,
-          about: about,
-          website: website,
-          lud16: ln,
-          ln: ln,
-          relays: relaysDisplay
-        }));
+          accounts[accIdx].relays = relaysDisplay, localStorage.setItem("dage_accounts", JSON.stringify(accounts)));
+      if (nbtcWalletOwnerPk !== pubKeyHex || !nbtcWalletAddress) {
+          try { await ensureNbtcWalletReady(); } catch (e) { console.warn("[NBTC] 保存个人资料时暂未取得钱包地址：", e); }
+        }
+        try { await ensureNbtcOwnProfilePublished(); } catch {}
+        const publicProfilePayload = nbtcBuildPublicProfilePayload({
+          name: name, picture: pic, about: about, website: website,
+          lud16: ln, ln: ln, relays: relaysDisplay
+        });
+        if (name || pic || about || website || ln || relaysDisplay || publicProfilePayload.nbtc_address) {
+          const nextProfileCreatedAt = Math.max(Math.floor(Date.now() / 1000), Number(window._profiles_ts?.[pubKeyHex] || 0) + 1);
+          await publishEvent(0, JSON.stringify(publicProfilePayload), [], nextProfileCreatedAt);
+        }
         syncLocalEncryptedCache(); triggerCloudSync();
         updateActivity(), closeProfileModal(), alert("设置已保存！");
     }
@@ -17013,8 +17119,12 @@ globalThis.NextTx=NextTx;
     let nbtcMempoolSpentSats = 0n;
     let nbtcSpendableSats = 0n;
     let nbtcPeerAddresses = {};
-    let nbtcPeerRequestAt = {};
     let nbtcPeerResponseAt = {};
+    let nbtcPeerProfileQueryAt = {};
+    let nbtcRemoteProfileState = {};
+    let nbtcProfileQueryWaiters = new Map();
+    let nbtcOwnProfilePublishPromise = null;
+    let nbtcOwnProfilePublishRetryTimer = null;
     let nbtcWalletPeerPk = null;
     let nbtcHistoryFilterPk = null;
     let nbtcTxHistory = [];
@@ -17234,22 +17344,232 @@ globalThis.NextTx=NextTx;
         el.className = "text-[10px] mt-1 " + (kind === "error" ? "text-red-500" : kind === "success" ? "text-green-600 dark:text-green-400" : "text-gray-400");
       }
     }
+
+    // NBTC address is public Nostr profile metadata. The chain marker is checked
+    // separately because bc1q encoding alone cannot distinguish NextBTC from Bitcoin.
+    function nbtcProfileAddressCandidate(profile) {
+      if (!profile || profile.nbtc_network !== "nextbtc" || profile.nbtc_genesis !== DGCHAT_NBTC_GENESIS) return null;
+      const address = typeof profile.nbtc_address === "string" ? profile.nbtc_address.trim() : "";
+      return /^bc1q[0-9a-z]{20,}$/i.test(address) && address === address.toLowerCase() ? address : null;
+    }
+    async function nbtcValidateProfileAddress(profile) {
+      const address = nbtcProfileAddressCandidate(profile);
+      if (!address || !globalThis.NextCrypto || typeof globalThis.NextCrypto.validateAddress !== "function") return null;
+      try {
+        await globalThis.NextCrypto.validateAddress(address);
+        return address;
+      } catch { return null; }
+    }
+    function nbtcPeerAddressFor(pk) {
+      if (!pk) return null;
+      const profileAddress = nbtcProfileAddressCandidate(profiles[pk]);
+      return profileAddress || (typeof nbtcPeerAddresses[pk] === "string" ? nbtcPeerAddresses[pk] : null);
+    }
+    function nbtcBuildPublicProfilePayload(overrides = {}) {
+      const current = profiles[pubKeyHex] && typeof profiles[pubKeyHex] === "object" ? profiles[pubKeyHex] : {};
+      const account = (accounts || []).find(a => a && a.pubkey === pubKeyHex) || {};
+      const payload = {};
+      for (const [key, value] of Object.entries(current)) {
+        if (key === "ghostAlias" || key.startsWith("_") || typeof value === "function" || value === undefined) continue;
+        payload[key] = value;
+      }
+      for (const key of ["name", "picture", "about", "website", "lud16", "ln", "relays"]) {
+        if ((payload[key] === undefined || payload[key] === "") && account[key] !== undefined && account[key] !== "") payload[key] = account[key];
+      }
+      Object.assign(payload, overrides);
+      delete payload.nbtc_address; delete payload.nbtc_network; delete payload.nbtc_genesis;
+      const address = nbtcWalletOwnerPk === pubKeyHex && nbtcWalletAddress ? nbtcWalletAddress : nbtcProfileAddressCandidate(current);
+      if (address) {
+        payload.nbtc_address = address;
+        payload.nbtc_network = "nextbtc";
+        payload.nbtc_genesis = DGCHAT_NBTC_GENESIS;
+      }
+      return payload;
+    }
+    function finishNbtcProfileQuery(subId, complete = false) {
+      const state = nbtcProfileQueryWaiters.get(subId);
+      if (!state) return;
+      nbtcProfileQueryWaiters.delete(subId);
+      clearTimeout(state.timer);
+      for (const url of state.urls) {
+        const sock = wsPool[url];
+        if (sock && sock.readyState === WebSocket.OPEN) { try { sock.send(JSON.stringify(["CLOSE", subId])); } catch {} }
+      }
+      if (complete && state.authorPk && !state.received) nbtcRemoteProfileState[state.authorPk] = { seen: true, address: null, network: null, genesis: null, created_at: 0 };
+      state.resolve({ complete: !!complete, relays: state.urls.length, received: !!state.received, profilesByRelay: state.profilesByRelay });
+    }
+    function queryNbtcProfileFromRelays(authorPk, timeoutMs = 5000) {
+      const active = Object.entries(wsPool).filter(([, sock]) => sock && sock.readyState === WebSocket.OPEN);
+      if (!active.length) return Promise.resolve({ complete: false, relays: 0 });
+      const subId = "nbtc-profile-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+      return new Promise(resolve => {
+        const state = { authorPk, received: false, profilesByRelay: Object.fromEntries(active.map(([url]) => [url, null])), urls: active.map(([url]) => url), pending: new Set(active.map(([url]) => url)), resolve, timer: null };
+        state.timer = setTimeout(() => finishNbtcProfileQuery(subId, false), timeoutMs);
+        nbtcProfileQueryWaiters.set(subId, state);
+        for (const [url, sock] of active) {
+          try { sock.send(JSON.stringify(["REQ", subId, { kinds: [0], authors: [authorPk], limit: 1 }])); }
+          catch { state.pending.delete(url); }
+        }
+        if (!state.pending.size) finishNbtcProfileQuery(subId, false);
+      });
+    }
+    function requestNbtcPeerProfile(peerPk, force = false) {
+      if (!peerPk || peerPk === pubKeyHex || groups[peerPk] || !/^[0-9a-f]{64}$/i.test(peerPk)) return false;
+      const last = Number(nbtcPeerProfileQueryAt[peerPk] || 0);
+      if (!force && Date.now() - last < 15000) return false;
+      const active = Object.entries(wsPool).filter(([, sock]) => sock && sock.readyState === WebSocket.OPEN);
+      if (!active.length) return false;
+      const subId = "nbtc-peer-profile-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+      nbtcPeerProfileQueryAt[peerPk] = Date.now();
+      for (const [, sock] of active) {
+        try { sock.send(JSON.stringify(["REQ", subId, { kinds: [0], authors: [peerPk], limit: 1 }])); } catch {}
+      }
+      setTimeout(() => {
+        for (const [url] of active) {
+          const sock = wsPool[url];
+          if (sock && sock.readyState === WebSocket.OPEN) { try { sock.send(JSON.stringify(["CLOSE", subId])); } catch {} }
+        }
+        if (!nbtcPeerAddressFor(peerPk) && nbtcWalletPeerPk === peerPk) {
+          const message = "暂时没有找到对方的 NBTC 收款地址。可以稍后刷新资料，或手动填写地址。";
+          const panelStatus = document.getElementById("nbtc-peer-address-status");
+          if (panelStatus) panelStatus.textContent = message;
+          const sendModal = document.getElementById("nbtc-send-modal");
+          const sendStatus = document.getElementById("nbtc-send-peer-status");
+          if (sendModal && !sendModal.classList.contains("hidden") && sendStatus) sendStatus.textContent = message;
+        }
+      }, 6000);
+      return true;
+    }
+    function refreshNbtcPeerProfile(peerPk = nbtcWalletPeerPk) {
+      if (!peerPk) return;
+      const sent = requestNbtcPeerProfile(peerPk, true);
+      const status = document.getElementById("nbtc-peer-address-status");
+      if (status) status.textContent = sent ? "正在更新联系人的收款信息…" : "暂时无法连接，请稍后再试。";
+      if (nbtcWalletPeerPk === peerPk) {
+        const sendStatus = document.getElementById("nbtc-send-peer-status");
+        if (sendStatus && !document.getElementById("nbtc-send-modal").classList.contains("hidden")) sendStatus.textContent = status ? status.textContent : "正在更新联系人的收款信息…";
+      }
+    }
+    function scheduleNbtcOwnProfilePublishRetry(delayMs = 10000) {
+      if (nbtcOwnProfilePublishRetryTimer || !privKeyHex || !pubKeyHex || isLocked) return;
+      nbtcOwnProfilePublishRetryTimer = setTimeout(() => {
+        nbtcOwnProfilePublishRetryTimer = null;
+        if (privKeyHex && pubKeyHex && !isLocked && nbtcWalletOwnerPk === pubKeyHex && nbtcWalletAddress) void ensureNbtcOwnProfilePublished();
+      }, delayMs);
+    }
+    async function ensureNbtcOwnProfilePublished() {
+      if (!privKeyHex || !pubKeyHex || isLocked || nbtcWalletOwnerPk !== pubKeyHex || !nbtcWalletAddress) return false;
+      if (nbtcOwnProfilePublishRetryTimer) { clearTimeout(nbtcOwnProfilePublishRetryTimer); nbtcOwnProfilePublishRetryTimer = null; }
+      if (nbtcOwnProfilePublishPromise) return await nbtcOwnProfilePublishPromise;
+      const owner = pubKeyHex;
+      const promise = (async () => {
+        const query = await queryNbtcProfileFromRelays(owner, 6000);
+        if (owner !== pubKeyHex || isLocked || !privKeyHex) return false;
+        if (!query.complete) { scheduleNbtcOwnProfilePublishRetry(12000); return false; }
+        const relayAddresses = Object.values(query.profilesByRelay || {});
+        const everyRelayHasAddress = query.complete && query.relays > 0 && relayAddresses.length === query.relays && relayAddresses.every(address => address === nbtcWalletAddress);
+        if (everyRelayHasAddress) {
+          profiles[owner] = Object.assign({}, profiles[owner] || {}, { nbtc_address: nbtcWalletAddress, nbtc_network: "nextbtc", nbtc_genesis: DGCHAT_NBTC_GENESIS });
+          syncLocalEncryptedCache();
+          return true;
+        }
+        const payload = nbtcBuildPublicProfilePayload({
+          nbtc_address: nbtcWalletAddress,
+          nbtc_network: "nextbtc",
+          nbtc_genesis: DGCHAT_NBTC_GENESIS
+        });
+        const nextProfileCreatedAt = Math.max(Math.floor(Date.now() / 1000), Number(window._profiles_ts?.[owner] || 0) + 1);
+        const event = await publishEvent(0, JSON.stringify(payload), [], nextProfileCreatedAt);
+        if (owner !== pubKeyHex || isLocked || !privKeyHex) return false;
+        const accepted = event && event._send_status && Object.values(event._send_status).some(x => x && x.success);
+        if (!accepted) { scheduleNbtcOwnProfilePublishRetry(15000); return false; }
+        profiles[owner] = Object.assign({}, profiles[owner] || {}, payload);
+        nbtcRemoteProfileState[owner] = { seen: true, address: nbtcWalletAddress, network: "nextbtc", genesis: DGCHAT_NBTC_GENESIS, created_at: event.created_at };
+        const accIdx = accounts.findIndex(a => a && a.pubkey === owner);
+        if (accIdx >= 0) {
+          accounts[accIdx].nbtc_address = nbtcWalletAddress;
+          accounts[accIdx].nbtc_network = "nextbtc";
+          localStorage.setItem("dage_accounts", JSON.stringify(accounts));
+        }
+        syncLocalEncryptedCache();
+        if (peerPkToViewGlobal === owner && !document.getElementById("peer-profile-modal").classList.contains("hidden")) showPeerProfileModal(owner);
+        return true;
+      })();
+      nbtcOwnProfilePublishPromise = promise;
+      try { return await promise; }
+      catch (e) {
+        console.warn("[NBTC] 个人收款资料发布失败，将在下次连接时重试：", e);
+        scheduleNbtcOwnProfilePublishRetry(15000);
+        return false;
+      } finally { if (nbtcOwnProfilePublishPromise === promise) nbtcOwnProfilePublishPromise = null; }
+    }
+
+    // Hidden maintenance entry: strict consecutive seven-tap sequence.
+    // Any non-title interaction, timeout, navigation, or background transition resets it.
     let nbtcMaintenanceTapCount = 0;
     let nbtcMaintenanceTapTimer = null;
-    function nbtcHandleMaintenanceTap() {
-      nbtcMaintenanceTapCount++;
-      if (nbtcMaintenanceTapTimer) clearTimeout(nbtcMaintenanceTapTimer);
-      nbtcMaintenanceTapTimer = setTimeout(() => { nbtcMaintenanceTapCount = 0; }, 4000);
-      if (nbtcMaintenanceTapCount < 7) return;
+    let nbtcMaintenanceLastTapAt = 0;
+
+    function resetNbtcMaintenanceTapSequence() {
       nbtcMaintenanceTapCount = 0;
+      nbtcMaintenanceLastTapAt = 0;
+      if (nbtcMaintenanceTapTimer !== null) {
+        clearTimeout(nbtcMaintenanceTapTimer);
+        nbtcMaintenanceTapTimer = null;
+      }
+    }
+
+    function isNbtcMaintenanceTitleTarget(target) {
+      const element = target && target.nodeType === 1 ? target : (target && target.parentElement);
+      return !!(element && typeof element.closest === "function" && element.closest("#nbtc-wallet-title"));
+    }
+
+    function nbtcHandleMaintenanceTap() {
+      const now = Date.now();
+      if (nbtcMaintenanceLastTapAt && now - nbtcMaintenanceLastTapAt > 1500) {
+        resetNbtcMaintenanceTapSequence();
+      }
+
+      nbtcMaintenanceTapCount += 1;
+      nbtcMaintenanceLastTapAt = now;
+
+      if (nbtcMaintenanceTapTimer !== null) clearTimeout(nbtcMaintenanceTapTimer);
+      nbtcMaintenanceTapTimer = setTimeout(resetNbtcMaintenanceTapSequence, 1501);
+
+      if (nbtcMaintenanceTapCount < 7) return;
+
+      // Reset immediately before changing the panel, so the completed sequence
+      // cannot be reused or accidentally trigger a second time.
+      resetNbtcMaintenanceTapSequence();
+
       const panel = document.getElementById("nbtc-index-settings");
       if (!panel) return;
       const reveal = panel.hidden;
       panel.hidden = !reveal;
       panel.open = reveal;
-      nbtcSetQuickCertTrust(!document.getElementById("nbtc-trust-cert").hidden);
+      const trustButton = document.getElementById("nbtc-trust-cert");
+      if (trustButton) nbtcSetQuickCertTrust(!trustButton.hidden);
       nbtcToast(reveal ? "高级维护设置已打开" : "高级维护设置已隐藏", "info");
     }
+
+    // A click anywhere except the wallet title breaks the sequence immediately.
+    // Capture phase ensures this also applies to controls whose own handlers stop bubbling.
+    document.addEventListener("pointerdown", (event) => {
+      if (!isNbtcMaintenanceTitleTarget(event.target)) resetNbtcMaintenanceTapSequence();
+    }, true);
+    document.addEventListener("click", (event) => {
+      if (!isNbtcMaintenanceTitleTarget(event.target)) resetNbtcMaintenanceTapSequence();
+    }, true);
+
+    // Reset on SPA/browser navigation and whenever the document leaves or re-enters foreground.
+    document.addEventListener("visibilitychange", resetNbtcMaintenanceTapSequence);
+    window.addEventListener("blur", resetNbtcMaintenanceTapSequence);
+    window.addEventListener("focus", resetNbtcMaintenanceTapSequence);
+    window.addEventListener("pagehide", resetNbtcMaintenanceTapSequence);
+    window.addEventListener("pageshow", resetNbtcMaintenanceTapSequence);
+    window.addEventListener("beforeunload", resetNbtcMaintenanceTapSequence);
+    window.addEventListener("hashchange", resetNbtcMaintenanceTapSequence);
+    window.addEventListener("popstate", resetNbtcMaintenanceTapSequence);
 
     function clearNbtcWifPanel() {
       if (nbtcWifHideTimer) clearTimeout(nbtcWifHideTimer);
@@ -17275,8 +17595,12 @@ globalThis.NextTx=NextTx;
       nbtcMempoolSpentSats = 0n;
       nbtcSpendableSats = 0n;
       nbtcPeerAddresses = {};
-      nbtcPeerRequestAt = {};
       nbtcPeerResponseAt = {};
+      nbtcPeerProfileQueryAt = {};
+      for (const [subId] of nbtcProfileQueryWaiters) finishNbtcProfileQuery(subId, false);
+      nbtcOwnProfilePublishPromise = null;
+      if (nbtcOwnProfilePublishRetryTimer) clearTimeout(nbtcOwnProfilePublishRetryTimer);
+      nbtcOwnProfilePublishRetryTimer = null;
       nbtcWalletPeerPk = null;
       nbtcHistoryFilterPk = null;
       nbtcTxHistory = [];
@@ -17304,17 +17628,36 @@ globalThis.NextTx=NextTx;
         nbtcWalletWif = wif;
         nbtcWalletAddress = derived.native;
         nbtcWalletOwnerPk = owner;
+        profiles[owner] || (profiles[owner] = {});
+        profiles[owner].nbtc_address = derived.native;
+        profiles[owner].nbtc_network = "nextbtc";
+        profiles[owner].nbtc_genesis = DGCHAT_NBTC_GENESIS;
+        const ownerAccountIndex = accounts.findIndex(a => a && a.pubkey === owner);
+        if (ownerAccountIndex >= 0) {
+          accounts[ownerAccountIndex].nbtc_address = derived.native;
+          accounts[ownerAccountIndex].nbtc_network = "nextbtc";
+          localStorage.setItem("dage_accounts", JSON.stringify(accounts));
+        }
+        syncLocalEncryptedCache();
         const addressEl = document.getElementById("nbtc-wallet-address");
         if (addressEl) addressEl.textContent = derived.native;
-        try { nbtcPeerAddresses = await loadEncryptedData("nbtc_peer_addresses_v1", {}); } catch { nbtcPeerAddresses = {}; }
+        const livePeerAddressUpdates = nbtcPeerAddresses && typeof nbtcPeerAddresses === "object" ? nbtcPeerAddresses : {};
+        try { nbtcPeerAddresses = Object.assign({}, await loadEncryptedData("nbtc_peer_addresses_v1", {}), livePeerAddressUpdates); } catch { nbtcPeerAddresses = livePeerAddressUpdates; }
         try { nbtcTxHistory = await loadEncryptedData("nbtc_tx_history_v1", []); } catch { nbtcTxHistory = []; }
         if (!Array.isArray(nbtcTxHistory)) nbtcTxHistory = [];
         if (!nbtcPeerAddresses || typeof nbtcPeerAddresses !== "object" || Array.isArray(nbtcPeerAddresses)) nbtcPeerAddresses = {};
+        for (const [peerPk, peerProfile] of Object.entries(profiles || {})) {
+          const cachedProfileAddress = nbtcProfileAddressCandidate(peerProfile);
+          if (cachedProfileAddress && !nbtcPeerAddresses[peerPk]) nbtcPeerAddresses[peerPk] = cachedProfileAddress;
+        }
+        void saveNbtcPeerAddresses();
         const apiInput = document.getElementById("nbtc-api-url-network");
         if (apiInput) {
           try { apiInput.value = nbtcApiBase(); } catch { apiInput.value = DGCHAT_NBTC_DEFAULT_API; }
         }
         nbtcSetBalanceLabel("余额：查询中…");
+        void ensureNbtcOwnProfilePublished();
+        if (peerPkToViewGlobal === owner && !document.getElementById("peer-profile-modal").classList.contains("hidden")) showPeerProfileModal(owner);
         void refreshNbtcWallet(false);
         if (nbtcBalanceTimer) clearInterval(nbtcBalanceTimer);
         nbtcBalanceTimer = setInterval(() => {
@@ -17416,15 +17759,12 @@ globalThis.NextTx=NextTx;
       if (!pk || groups[pk] || pk === pubKeyHex) { panel.classList.add("hidden"); return; }
       panel.classList.remove("hidden");
       document.getElementById("nbtc-peer-name").textContent = nbtcPeerName(pk);
-      const address = nbtcPeerAddresses[pk];
-      document.getElementById("nbtc-peer-address-status").textContent = address ? "已获取对方的 NBTC 收款地址：" + nbtcShortAddress(address) : "尚未获取对方的 NBTC 收款地址。获取后即可向对方转账。";
-      const requestButton = document.getElementById("nbtc-peer-request-button");
-      if (requestButton) {
-        requestButton.disabled = false;
-        requestButton.textContent = address ? "更新收款地址" : "获取收款地址";
-      }
+      const address = nbtcPeerAddressFor(pk);
+      document.getElementById("nbtc-peer-address-status").textContent = address ? "已获取对方的 NBTC 收款地址：" + nbtcShortAddress(address) : "暂未获取对方的收款地址。可以刷新资料，或手动填写地址。";
+      if (!address) requestNbtcPeerProfile(pk);
     }
     function openNbtcWalletModal(peerPk = null) {
+      resetNbtcMaintenanceTapSequence();
       if (!privKeyHex || !pubKeyHex || isLocked) return nbtcToast("请先解锁 DGChat 账户", "info");
       nbtcWalletPeerPk = peerPk && !groups[peerPk] && peerPk !== pubKeyHex ? peerPk : null;
       nbtcHistoryFilterPk = nbtcWalletPeerPk;
@@ -17442,6 +17782,7 @@ globalThis.NextTx=NextTx;
       if (apiInput) { try { apiInput.value = nbtcApiBase(); } catch { apiInput.value = DGCHAT_NBTC_DEFAULT_API; } }
       renderNbtcRecipientBook("");
       renderNbtcPeerPanel();
+      if (nbtcWalletPeerPk && !nbtcPeerAddressFor(nbtcWalletPeerPk)) requestNbtcPeerProfile(nbtcWalletPeerPk);
       if (nbtcBalanceSats !== null) document.getElementById("nbtc-wallet-balance").textContent = nbtcFormatSats(nbtcBalanceSats);
       const networkIndicator = document.getElementById("nbtc-wallet-network");
       if (networkIndicator && nbtcBalanceSats === null) { networkIndicator.hidden = true; networkIndicator.textContent = ""; }
@@ -17453,6 +17794,7 @@ globalThis.NextTx=NextTx;
     window.openNbtcWalletModal = openNbtcWalletModal;
 
     function closeNbtcWalletModal(fromPopState = false) {
+      resetNbtcMaintenanceTapSequence();
       document.getElementById("nbtc-wallet-modal").classList.add("hidden");
       const maintenance = document.getElementById("nbtc-index-settings");
       if (maintenance) { maintenance.open = false; maintenance.hidden = true; }
@@ -17531,11 +17873,16 @@ globalThis.NextTx=NextTx;
       document.getElementById("nbtc-send-preview").classList.add("hidden");
       statusLine.textContent = "";
       if (nbtcWalletPeerPk) {
-        const cached = nbtcPeerAddresses[nbtcWalletPeerPk];
-        addressInput.value = cached || "";
+        const address = nbtcPeerAddressFor(nbtcWalletPeerPk);
+        addressInput.value = address || "";
         status.classList.remove("hidden");
-        status.textContent = cached ? "已获取 " + nbtcPeerName(nbtcWalletPeerPk) + " 的 NBTC 收款地址，请核对后再转账。" : "正在获取 " + nbtcPeerName(nbtcWalletPeerPk) + " 的 NBTC 收款地址…";
-        void requestNbtcPeerAddress(nbtcWalletPeerPk, false);
+        status.textContent = address
+          ? "已从对方个人资料获取收款地址，请核对后再转账。"
+          : "正在读取对方的个人资料…如果暂时无法获取，也可以手动填写地址。";
+        if (!address) {
+          const requested = requestNbtcPeerProfile(nbtcWalletPeerPk, true);
+          if (!requested) status.textContent = "暂时无法读取对方的个人资料，你可以稍后重试或手动填写地址。";
+        } else void acceptNbtcPeerAddress(nbtcWalletPeerPk, address);
       } else {
         addressInput.value = "";
         status.classList.add("hidden");
@@ -17794,46 +18141,6 @@ globalThis.NextTx=NextTx;
       const expires = String(Math.floor(Date.now() / 1000) + 30 * 86400);
       return await publishEvent(30078, encrypted, [["d", d], ["p", peerPk], ["expiration", expires]]);
     }
-    function setNbtcPeerRequestStatus(peerPk, message, busy = false) {
-      if (nbtcWalletPeerPk !== peerPk) return;
-      const panelStatus = document.getElementById("nbtc-peer-address-status");
-      const sendStatus = document.getElementById("nbtc-send-peer-status");
-      const sendModal = document.getElementById("nbtc-send-modal");
-      if (panelStatus) panelStatus.textContent = message;
-      if (sendStatus && sendModal && !sendModal.classList.contains("hidden")) sendStatus.textContent = message;
-      const button = document.getElementById("nbtc-peer-request-button");
-      if (button) {
-        button.disabled = !!busy;
-        button.textContent = busy ? "正在获取…" : (nbtcPeerAddresses[peerPk] ? "更新收款地址" : "再次请求");
-      }
-    }
-    async function requestNbtcPeerAddress(peerPk, force = false) {
-      if (!peerPk || !privKeyHex || isLocked || peerPk === pubKeyHex || groups[peerPk]) return false;
-      if (nbtcPeerAddresses[peerPk] && !force) return true;
-      const last = Number(nbtcPeerRequestAt[peerPk] || 0);
-      if (!force && Date.now() - last < 30000) {
-        setNbtcPeerRequestStatus(peerPk, "已向对方发送过请求，请稍候；也可以手动填写收款地址。");
-        return false;
-      }
-      setNbtcPeerRequestStatus(peerPk, "正在向 " + nbtcPeerName(peerPk) + " 请求 NBTC 收款地址…", true);
-      try {
-        const event = await sendNbtcProtocol(peerPk, { action: "request_address" });
-        const sent = event && event._send_status && Object.values(event._send_status).some(x => x && x.success);
-        nbtcPeerRequestAt[peerPk] = Date.now() - (sent ? 0 : 25000);
-        setNbtcPeerRequestStatus(
-          peerPk,
-          sent
-            ? "已向对方发送收款地址请求，等待对方回应。你也可以手动填写地址。"
-            : "请求暂未送达。请稍后重试，或手动填写对方的 NBTC 收款地址。"
-        );
-        return !!sent;
-      } catch (e) {
-        nbtcPeerRequestAt[peerPk] = Date.now() - 25000;
-        console.warn("[NBTC] 联系人收款地址请求失败：", e);
-        setNbtcPeerRequestStatus(peerPk, "暂时无法请求对方的收款地址，请稍后重试，或手动填写地址。");
-        return false;
-      }
-    }
     async function acceptNbtcPeerAddress(peerPk, address) {
       if (!peerPk || peerPk === pubKeyHex || groups[peerPk] || typeof address !== "string" || !/^bc1q/i.test(address)) return false;
       try {
@@ -17843,7 +18150,8 @@ globalThis.NextTx=NextTx;
         await saveNbtcPeerAddresses();
         if (nbtcWalletPeerPk === peerPk) renderNbtcPeerPanel();
         if (document.getElementById("nbtc-send-modal") && !document.getElementById("nbtc-send-modal").classList.contains("hidden") && nbtcWalletPeerPk === peerPk) {
-          document.getElementById("nbtc-send-address").value = address;
+          const sendAddress = document.getElementById("nbtc-send-address");
+          if (sendAddress && (!sendAddress.value.trim() || sendAddress.value.trim() === address)) sendAddress.value = address;
           document.getElementById("nbtc-send-peer-status").textContent = "已获取 " + nbtcPeerName(peerPk) + " 的 NBTC 收款地址，请核对后再转账。";
         }
         return true;
