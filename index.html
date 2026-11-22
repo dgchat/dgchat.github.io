@@ -11111,6 +11111,52 @@ html.dark #nbtc-trust-cert { color: #ffd27a; }
 @media(max-width:380px){#nbtc-fee-control .nbtc-fee-tier{min-height:55px}#nbtc-fee-control .nbtc-fee-tier span{font-size:9px}}
 </style>
 
+<style id="dgchat-lightning-manager-button-fix-v0119">
+  #lightning-wallet-manager-button {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 76px;
+    min-height: 40px;
+    padding: 0 14px !important;
+    border: 1px solid #d97706 !important;
+    border-radius: 9px !important;
+    background: #fff7ed !important;
+    color: #9a3412 !important;
+    font-family: inherit;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    line-height: 1.2;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 2;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease, transform .15s ease;
+  }
+  #lightning-wallet-manager-button:hover {
+    background: #ffedd5 !important;
+    border-color: #c2410c !important;
+    color: #7c2d12 !important;
+  }
+  #lightning-wallet-manager-button:active { transform: scale(.97); }
+  #lightning-wallet-manager-button:focus-visible {
+    outline: 2px solid #f59e0b !important;
+    outline-offset: 2px;
+  }
+  html.dark #lightning-wallet-manager-button {
+    background: #451a03 !important;
+    border-color: #b45309 !important;
+    color: #fcd34d !important;
+  }
+  html.dark #lightning-wallet-manager-button:hover {
+    background: #78350f !important;
+    border-color: #d97706 !important;
+    color: #fef3c7 !important;
+  }
+</style>
+
 </head>
 
 <body class="bg-gray-100 dark:bg-gray-950 h-screen-dvh w-screen overflow-hidden flex items-center justify-center font-sans relative">
@@ -11175,7 +11221,7 @@ html.dark #nbtc-trust-cert { color: #ffd27a; }
     </div>
 
     <div class="w-full max-w-sm mx-auto mt-5 text-center text-[11px] font-mono tracking-wider text-gray-400 dark:text-gray-500 select-none">
-      DGChat v0.1.118
+      DGChat v0.1.119
     </div>
   </div>
 
@@ -11293,7 +11339,7 @@ html.dark #nbtc-trust-cert { color: #ffd27a; }
         </div>
         <h3 class="text-xl font-bold text-gray-700 dark:text-gray-200 tracking-wide">DGCHAT 去中心化安全协议端</h3>
         <p class="text-sm mt-3 text-gray-400 max-w-md text-center leading-relaxed">
-          基于 Nostr 协议构建，全场景加密通讯，无中心化服务器<br>密钥即身份，通讯主权，自由导出<br><a href="https://github.com/dgchat/dgchat.github.io" target="_blank" rel="noopener noreferrer">https://github.com/dgchat/dgchat.github.io</a><br><span class="inline-block mt-1 text-xs font-mono tracking-wider text-gray-400">DGChat v0.1.118</span>
+          基于 Nostr 协议构建，全场景加密通讯，无中心化服务器<br>密钥即身份，通讯主权，自由导出<br><a href="https://github.com/dgchat/dgchat.github.io" target="_blank" rel="noopener noreferrer">https://github.com/dgchat/dgchat.github.io</a><br><span class="inline-block mt-1 text-xs font-mono tracking-wider text-gray-400">DGChat v0.1.119</span>
         </p>
         <div class="mt-8 flex space-x-4">
           <span class="px-3 py-1 bg-gray-100 dark:bg-gray-950 text-gray-500 dark:text-gray-400 text-xs rounded-full font-medium">NIP-04/59</span>
@@ -11796,7 +11842,7 @@ html.dark #nbtc-trust-cert { color: #ffd27a; }
               <div class="text-xs font-semibold text-gray-700 dark:text-gray-200">闪电网络钱包</div>
               <div class="text-[10px] text-gray-400 mt-0.5">独立连接，可在私聊中向好友付款</div>
             </div>
-            <button type="button" onclick="window.openLightningWalletManager()" class="shrink-0 px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-semibold">管理钱包</button>
+            <button id="lightning-wallet-manager-button" type="button" class="lightning-wallet-manager-trigger shrink-0">管理钱包</button>
           </div>
         </div>
 
@@ -19342,14 +19388,31 @@ globalThis.NextTx=NextTx;
     return ({ paid: "已支付", failed: "支付失败", unknown: "结果待确认", paying: "处理中" })[state] || "未知状态";
   }
 
+  let managerLoadPromise = null;
+
   function openManager() {
-    ensureLoaded().then(() => {
+    const modal = $("lightning-wallet-modal");
+    if (!modal) {
+      notify("闪电钱包管理界面未加载，请刷新页面后重试。", "error");
+      return;
+    }
+    const wasHidden = modal.classList.contains("hidden");
+    modal.classList.remove("hidden");
+    if (wasHidden && typeof ModalManager !== "undefined" && ModalManager.push) {
+      ModalManager.push("lightningWallet", closeManager);
+    }
+    if (managerLoadPromise) return managerLoadPromise;
+    managerLoadPromise = ensureLoaded().then(() => {
       renderManager();
       const relayInput = $("lightning-connect-relay");
       if (relayInput) relayInput.value = localStorage.getItem("dage_ln_nwc_relay_" + pubKeyHex) || relayInput.value || DEFAULT_RELAY;
-      $("lightning-wallet-modal").classList.remove("hidden");
-      if (typeof ModalManager !== "undefined" && ModalManager.push) ModalManager.push("lightningWallet", closeManager);
-    }).catch(e => notify(e.message || String(e), "error"));
+    }).catch(e => {
+      setManagerStatus(e.message || String(e), "error");
+      notify(e.message || String(e), "error");
+    }).finally(() => {
+      managerLoadPromise = null;
+    });
+    return managerLoadPromise;
   }
 
   function closeManager(fromPopState = false) {
@@ -19964,6 +20027,18 @@ globalThis.NextTx=NextTx;
   window.connectLightningFromPayment = connectFromPayment;
   window.openPeerProfileLightningPayment = openPeerProfilePayment;
   window.dgchatLightningUpdateChatButton = updateChatButton;
+
+  const managerButton = $("lightning-wallet-manager-button");
+  if (managerButton) {
+    managerButton.addEventListener("click", event => {
+      event.preventDefault();
+      event.stopPropagation();
+      openManager();
+    });
+  } else {
+    console.warn("[Lightning] wallet manager trigger button was not found.");
+  }
+
   window.addEventListener("beforeunload", clearRuntime);
   window.addEventListener("storage", ev => { if (ev.key && ev.key.startsWith("dage_enc_" + STORAGE_CONNECTION + "_")) { connection = null; loadedFor = null; } });
 })();
