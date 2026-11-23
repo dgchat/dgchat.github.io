@@ -43,7 +43,7 @@ DGCHAT 致力于提供简洁、自由、注重隐私的通讯体验。除基础�
 - **加密组件**：[libsodium.js](https://github.com/jedisct1/libsodium.js)、[Nostr-tools](https://github.com/nbd-wtf/nostr-tools)、WebCrypto API
 - **界面技术**：HTML5、JavaScript、[Tailwind CSS](https://tailwindcss.com/)
 - **本地存储**：IndexedDB、LocalStorage、SessionStorage
-- **数字资产支持**：NBTC 钱包、Lightning Address、LNURL-pay、Nostr Wallet Connect
+- **数字资产支持**：[NBTC 钱包](https://nextbtc.rf.gd)、Lightning Address、LNURL-pay、Nostr Wallet Connect
 - **部署方式**：静态网页托管或单 HTML 文件运行
 
 ---
